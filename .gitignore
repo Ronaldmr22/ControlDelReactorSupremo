@@ -107,3 +107,16 @@ InitTestScene*.unity*
 
 # Auto-generated cache in Assets folder
 /[Aa]ssets/[Ss]ceneDependencyCache*
+
+# ================================
+# Unity Client - generated folders
+# ================================
+ClienteUnity/[Ll]ibrary/
+ClienteUnity/[Tt]emp/
+ClienteUnity/[Oo]bj/
+ClienteUnity/[Bb]uild/
+ClienteUnity/[Bb]uilds/
+ClienteUnity/[Ll]ogs/
+ClienteUnity/[Uu]ser[Ss]ettings/
+ClienteUnity/[Mm]emoryCaptures/
+ClienteUnity/[Rr]ecordings/
