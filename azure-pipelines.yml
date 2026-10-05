@@ -23,5 +23,5 @@ steps:
 - script: dotnet test Backend/ControlReactor.slnx --configuration Release --no-build
   displayName: 'Ejecutar pruebas automaticas'
 
-- script: docker build -t controlreactor-api:ci ./Backend
+- script: '"C:\Users\Usuario\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe" build -t controlreactor-api:ci ./Backend'
   displayName: 'Verificar construccion Docker'
