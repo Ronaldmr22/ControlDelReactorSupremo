@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ControlReactor.Api/ControlReactor.Api.csproj" />
+  <Project Path="ControlReactor.Datos/ControlReactor.Datos.csproj" />
+  <Project Path="ControlReactor.Modelos/ControlReactor.Modelos.csproj" />
+  <Project Path="ControlReactor.Negocio/ControlReactor.Negocio.csproj" />
+</Solution>
