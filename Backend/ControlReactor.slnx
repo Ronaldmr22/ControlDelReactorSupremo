@@ -3,4 +3,5 @@
   <Project Path="ControlReactor.Datos/ControlReactor.Datos.csproj" />
   <Project Path="ControlReactor.Modelos/ControlReactor.Modelos.csproj" />
   <Project Path="ControlReactor.Negocio/ControlReactor.Negocio.csproj" />
+  <Project Path="ControlReactor.Tests/ControlReactor.Tests.csproj" />
 </Solution>
