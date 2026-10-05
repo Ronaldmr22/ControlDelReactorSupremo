@@ -1,4 +1,11 @@
+using ControlReactor.Datos.Contexto;
+using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
+
+// Creacion de la conexion con  PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+builder.Services.AddDbContext<ControlReactorDbContext>(options =>options.UseNpgsql(connectionString));
 
 // Servicios del backend
 builder.Services.AddOpenApi();
@@ -16,5 +23,6 @@ app.MapGet("/api/prueba", () =>
 {
     return "Servidor de Control del Reactor funcionando";
 });
+
 
 app.Run();
