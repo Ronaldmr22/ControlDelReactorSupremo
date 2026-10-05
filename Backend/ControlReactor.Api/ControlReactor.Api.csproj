@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ControlReactor.Negocio\ControlReactor.Negocio.csproj" />
+    <ProjectReference Include="..\ControlReactor.Datos\ControlReactor.Datos.csproj" />
   </ItemGroup>
 
 </Project>
