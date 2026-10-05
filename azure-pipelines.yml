@@ -1,0 +1,27 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - main
+
+pool:
+  name: 'Default'
+
+steps:
+- task: UseDotNet@2
+  displayName: 'Instalar .NET 10'
+  inputs:
+    packageType: 'sdk'
+    version: '10.0.x'
+
+- script: dotnet restore Backend/ControlReactor.slnx
+  displayName: 'Restaurar dependencias'
+
+- script: dotnet build Backend/ControlReactor.slnx --configuration Release --no-restore
+  displayName: 'Compilar backend'
+
+- script: dotnet test Backend/ControlReactor.slnx --configuration Release --no-build
+  displayName: 'Ejecutar pruebas automaticas'
+
+- script: docker build -t controlreactor-api:ci ./Backend
+  displayName: 'Verificar construccion Docker'
