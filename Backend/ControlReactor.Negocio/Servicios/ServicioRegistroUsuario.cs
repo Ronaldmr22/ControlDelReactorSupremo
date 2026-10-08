@@ -11,11 +11,14 @@ namespace ControlReactor.Negocio.Servicios
         private readonly IUsuarioRepositorio _repositorio;
         private readonly ServicioValidacionCorreo _validadorCorreo;
         private readonly PasswordHasher<Usuario> _passwordHasher;
+        private readonly ServicioVerificacionCorreo _servicioVerificacion;
 
-        public ServicioRegistroUsuario(IUsuarioRepositorio repositorio, ServicioValidacionCorreo validadorCorreo)
+        public ServicioRegistroUsuario(IUsuarioRepositorio repositorio, ServicioValidacionCorreo validadorCorreo, ServicioVerificacionCorreo servicioVerificacion)
         {
             _repositorio = repositorio;
             _validadorCorreo = validadorCorreo;
+            _servicioVerificacion = servicioVerificacion;
+            
             _passwordHasher = new PasswordHasher<Usuario>();
         }
 
@@ -92,7 +95,18 @@ namespace ControlReactor.Negocio.Servicios
             // 8. Guardar en PostgreSQL
             await _repositorio.CrearAsync(usuario);
 
-            return (true,"Usuario registrado. Debe verificar su correo para jugar.");
+            // Genera y envía el código al correo registrado.
+            try
+            {
+                // Intenta enviar el código de verificación.
+                await _servicioVerificacion.GenerarYEnviarAsync(usuario);
+            }
+            catch (HttpRequestException)
+            {
+                return (false,"La cuenta fue creada, pero no se pudo enviar el código. Intenta solicitar uno nuevo más tarde.");
+            }
+
+            return (true, "Usuario registrado. Revisa tu correo para verificar tu cuenta.");
         }
     }
 }

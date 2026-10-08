@@ -18,6 +18,7 @@ namespace ControlReactor.Datos.Contexto
         public DbSet<Logro> Logros { get; set; }
 
         public DbSet<UsuarioLogro> UsuariosLogros { get; set; }
+        public DbSet<CodigoVerificacion> CodigosVerificacion { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -50,6 +51,12 @@ namespace ControlReactor.Datos.Contexto
             modelBuilder.Entity<UsuarioLogro>().HasOne(ul => ul.Usuario).WithMany().HasForeignKey(ul => ul.IdUsuario);
 
             modelBuilder.Entity<UsuarioLogro>().HasOne(ul => ul.Logro).WithMany().HasForeignKey(ul => ul.IdLogro);
+        
+            // CÓDIGO DE VERIFICACIÓN
+            modelBuilder.Entity<CodigoVerificacion>().HasKey(c => c.IdCodigoVerificacion);
+
+            modelBuilder.Entity<CodigoVerificacion>().HasOne(c => c.Usuario).WithMany().HasForeignKey(c => c.IdUsuario);
+        
         }
     }
 }

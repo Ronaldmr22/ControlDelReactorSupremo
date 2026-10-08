@@ -14,3 +14,5 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ConnectionStrings__DefaultConnection: ${DB_CONNECTION_STRING}
       AbstractApi__ApiKey: ${ABSTRACT_API_KEY}
+      Brevo__ApiKey: ${BREVO_API_KEY}
+      Brevo__Remitente: ${BREVO_REMITENTE}

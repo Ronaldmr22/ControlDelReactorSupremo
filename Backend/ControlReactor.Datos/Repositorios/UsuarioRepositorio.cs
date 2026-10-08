@@ -31,5 +31,18 @@ namespace ControlReactor.Datos.Repositorios
 
             return usuario;
         }
+
+        // Busca un usuario por su correo.
+        public async Task<Usuario?> ObtenerPorCorreoAsync(string correo)
+        {
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.Correo == correo);
+        }
+
+        // Guarda los cambios de un usuario.
+        public async Task ActualizarAsync(Usuario usuario)
+        {
+            _context.Usuarios.Update(usuario);
+            await _context.SaveChangesAsync();
+        }
     }
 }

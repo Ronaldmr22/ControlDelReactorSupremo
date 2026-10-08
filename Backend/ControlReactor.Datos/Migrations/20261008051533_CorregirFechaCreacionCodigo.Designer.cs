@@ -3,6 +3,7 @@ using System;
 using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ControlReactor.Datos.Migrations
 {
     [DbContext(typeof(ControlReactorDbContext))]
-    partial class ControlReactorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008051533_CorregirFechaCreacionCodigo")]
+    partial class CorregirFechaCreacionCodigo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

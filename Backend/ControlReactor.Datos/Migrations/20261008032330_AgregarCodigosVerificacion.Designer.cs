@@ -3,6 +3,7 @@ using System;
 using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ControlReactor.Datos.Migrations
 {
     [DbContext(typeof(ControlReactorDbContext))]
-    partial class ControlReactorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261008032330_AgregarCodigosVerificacion")]
+    partial class AgregarCodigosVerificacion
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,16 +37,10 @@ namespace ControlReactor.Datos.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("FechaCreacion")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime>("FechaExpiracion")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("IdUsuario")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("IntentosFallidos")
                         .HasColumnType("integer");
 
                     b.Property<bool>("Utilizado")
