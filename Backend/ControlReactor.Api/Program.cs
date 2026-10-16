@@ -7,13 +7,14 @@ using ControlReactor.Modelos.DTOs;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
 // Servicios para registro y verificación de usuarios.
 builder.Services.AddHttpClient<ServicioValidacionCorreo>();
 builder.Services.AddHttpClient<ServicioEnvioCorreo>();
-
 builder.Services.AddScoped<ServicioRegistroUsuario>();
 builder.Services.AddScoped<ServicioCodigoVerificacion>();
 builder.Services.AddScoped<ServicioVerificacionCorreo>();
+builder.Services.AddScoped<ServicioLoginUsuario>();
 
 // Repositorios.
 builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
@@ -88,5 +89,26 @@ app.MapPost("/api/usuarios/reenviar-codigo",
         ? Results.Ok(new { mensaje = resultado.Mensaje })
         : Results.BadRequest(new { mensaje = resultado.Mensaje });
 });
+ // Inicio de sesión de usuarios.
+app.MapPost("/api/usuarios/login", async (
+    LoginUsuarioDto dto,
+    ServicioLoginUsuario servicio) =>
+{
+    var resultado = await servicio.LoginAsync(dto);
+
+    if (!resultado.Exito)
+    {
+        return Results.Json(new { mensaje = resultado.Mensaje }, statusCode: 401);
+    }
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje,
+        idUsuario = resultado.Usuario!.IdUsuario,
+        nombreUsuario = resultado.Usuario.NombreUsuario
+    });
+});
+
+
 
 app.Run();
