@@ -15,11 +15,12 @@ builder.Services.AddScoped<ServicioRegistroUsuario>();
 builder.Services.AddScoped<ServicioCodigoVerificacion>();
 builder.Services.AddScoped<ServicioVerificacionCorreo>();
 builder.Services.AddScoped<ServicioLoginUsuario>();
+builder.Services.AddScoped<ServicioRecuperacionPassword>();
 
 // Repositorios.
 builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 builder.Services.AddScoped<ICodigoVerificacionRepositorio, CodigoVerificacionRepositorio>();
-
+builder.Services.AddScoped<ICodigoRecuperacionRepositorio, CodigoRecuperacionRepositorio>();
 
 // Creacion de la conexion con  PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -78,8 +79,7 @@ app.MapPost("/api/usuarios/verificar-correo",
     });
 
 // Permite solicitar un nuevo código de verificación
-app.MapPost("/api/usuarios/reenviar-codigo",
-    async (ReenviarCodigoDto datos, ServicioVerificacionCorreo servicio) =>
+app.MapPost("/api/usuarios/reenviar-codigo", async (ReenviarCodigoDto datos, ServicioVerificacionCorreo servicio) =>
 {
     // Solicitar el reenvío del código
     var resultado = await servicio.ReenviarCodigoAsync(datos.Correo);
@@ -109,6 +109,61 @@ app.MapPost("/api/usuarios/login", async (
     });
 });
 
+// Solicitar un código para recuperar la contraseña.
+app.MapPost("/api/usuarios/solicitar-recuperacion", async (SolicitarRecuperacionDto dto,ServicioRecuperacionPassword servicio) =>
+{
+    var resultado = await servicio.SolicitarRecuperacionAsync(dto.Correo);
 
+    if (!resultado.Exito)
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+    }
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
+
+// Verificar el código de recuperación.
+app.MapPost("/api/usuarios/verificar-codigo-recuperacion",async (VerificarCodigoRecuperacionDto dto,ServicioRecuperacionPassword servicio) =>
+{
+    var resultado = await servicio.VerificarCodigoAsync(dto.Correo, dto.Codigo);
+
+    if (!resultado.Exito)
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+    }
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
+
+// Restablecer la contraseña del usuario.
+app.MapPost("/api/usuarios/cambiar-password", async (CambiarPasswordDto dto, ServicioRecuperacionPassword servicio) =>
+{
+    var resultado = await servicio.CambiarPasswordAsync( dto.Correo, dto.Codigo, dto.NuevaPassword);
+
+    if (!resultado.Exito)
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+    }
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
 
 app.Run();
