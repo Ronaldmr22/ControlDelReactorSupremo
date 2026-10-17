@@ -22,6 +22,40 @@ namespace ControlReactor.Datos.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoRecuperacion", b =>
+                {
+                    b.Property<int>("IdCodigoRecuperacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdCodigoRecuperacion"));
+
+                    b.Property<string>("CodigoHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("FechaExpiracion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IntentosFallidos")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Utilizado")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("IdCodigoRecuperacion");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.ToTable("CodigosRecuperacion");
+                });
+
             modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoVerificacion", b =>
                 {
                     b.Property<int>("IdCodigoVerificacion")
@@ -203,6 +237,17 @@ namespace ControlReactor.Datos.Migrations
                     b.HasIndex("IdUsuario");
 
                     b.ToTable("UsuariosLogros");
+                });
+
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoRecuperacion", b =>
+                {
+                    b.HasOne("ControlReactor.Modelos.Entidades.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoVerificacion", b =>
