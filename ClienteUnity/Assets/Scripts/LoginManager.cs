@@ -70,7 +70,7 @@ public class LoginManager : MonoBehaviour
 
         string json = JsonUtility.ToJson(datos);
 
-        string url = "http://localhost:5008/api/usuarios/login";
+        string url = "https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net/api/usuarios/login";
 
         using (UnityWebRequest request = UnityWebRequest.Post(url, json, "application/json"))
         {
