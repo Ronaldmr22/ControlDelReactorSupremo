@@ -59,5 +59,44 @@ namespace ControlReactor.Negocio.Servicios
                 throw new HttpRequestException("Se agotó el tiempo de espera al contactar con Brevo.", ex);
             }
         }
+        // Envía un código para recuperar la contraseña.
+        public async Task EnviarCodigoRecuperacionAsync(string correoDestino, string codigo)
+        {
+            var contenido = new
+            {
+                sender = new
+                {
+                    name = "Control del Reactor",
+                    email = _remitente
+                },
+                to = new[]
+                {
+                    new { email = correoDestino }
+                },
+                subject = "Recuperación de contraseña - Control del Reactor",
+                textContent = $"Recibimos una solicitud para recuperar tu contraseña.\n\n" +
+                            $"Tu código de recuperación es: {codigo}\n\n" +
+                            "Este código vence en 10 minutos.\n" +
+                            "No compartas este código con nadie.\n\n" +
+                            "Si no solicitaste recuperar tu contraseña, ignora este correo."
+            };
+
+            using var solicitud = new HttpRequestMessage(
+                HttpMethod.Post,
+                "https://api.brevo.com/v3/smtp/email"
+            );
+
+            solicitud.Headers.Add("api-key", _apiKey);
+            solicitud.Content = JsonContent.Create(contenido);
+
+            using var respuesta = await _httpClient.SendAsync(solicitud);
+
+            if (!respuesta.IsSuccessStatusCode)
+            {
+                throw new HttpRequestException(
+                    $"Brevo rechazó el envío. Código HTTP: {(int)respuesta.StatusCode}"
+                );
+            }
+        }
     }
 }

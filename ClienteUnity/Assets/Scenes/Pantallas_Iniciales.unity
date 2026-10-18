@@ -1437,9 +1437,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 536755627}
-        m_TargetAssemblyTypeName: CodigoManager, Assembly-CSharp
-        m_MethodName: VerificarCodigo
+      - m_Target: {fileID: 311677262}
+        m_TargetAssemblyTypeName: RecuperacionPasswordManager, Assembly-CSharp
+        m_MethodName: CambiarPassword
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -1995,6 +1995,7 @@ RectTransform:
   m_Children:
   - {fileID: 1149361615}
   - {fileID: 593451935}
+  - {fileID: 311677261}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2532,6 +2533,65 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 269673347}
   m_CullTransparentMesh: 1
+--- !u!1 &311677260
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 311677261}
+  - component: {fileID: 311677262}
+  m_Layer: 5
+  m_Name: GestorRecuperacion
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &311677261
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311677260}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 185217074}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &311677262
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 311677260}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a81250a2e3546634a8934b00adaeea17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RecuperacionPasswordManager
+  inputCorreo: {fileID: 1367137348}
+  inputCodigo: {fileID: 32776828}
+  inputNuevaPassword: {fileID: 1363648816}
+  inputConfirmarPassword: {fileID: 1363648816}
+  mensajeError: {fileID: 1616376273}
+  mensajeErrorCodigo: {fileID: 1781221567}
+  mensajeErrorPassword: {fileID: 313681052}
+  pantallaRecuperar: {fileID: 1897559950}
+  pantallaCodigo: {fileID: 782013538}
+  pantallaNuevaPassword: {fileID: 536755625}
+  pantallaLogin: {fileID: 664005715}
 --- !u!1 &313681050
 GameObject:
   m_ObjectHideFlags: 0
@@ -5353,7 +5413,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &664005716
 RectTransform:
   m_ObjectHideFlags: 0
@@ -6309,7 +6369,7 @@ GameObject:
   - component: {fileID: 782013541}
   - component: {fileID: 782013540}
   m_Layer: 5
-  m_Name: VerficarCodigo
+  m_Name: " VerificarCodigoNContrase\xF1a"
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6478,9 +6538,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1897559952}
-        m_TargetAssemblyTypeName: CodigoManager, Assembly-CSharp
-        m_MethodName: VerificarCodigo
+      - m_Target: {fileID: 311677262}
+        m_TargetAssemblyTypeName: RecuperacionPasswordManager, Assembly-CSharp
+        m_MethodName: SolicitarCodigo
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -11540,9 +11600,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 664005717}
-        m_TargetAssemblyTypeName: LoginManager, Assembly-CSharp
-        m_MethodName: VerificarCorreo
+      - m_Target: {fileID: 311677262}
+        m_TargetAssemblyTypeName: RecuperacionPasswordManager, Assembly-CSharp
+        m_MethodName: AbrirPantallaRecuperar
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -12961,6 +13021,7 @@ GameObject:
   - component: {fileID: 1897559954}
   - component: {fileID: 1897559953}
   - component: {fileID: 1897559952}
+  - component: {fileID: 1897559955}
   m_Layer: 5
   m_Name: PantallaRecuperar
   m_TagString: Untagged
@@ -13046,6 +13107,29 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1897559950}
   m_CullTransparentMesh: 1
+--- !u!114 &1897559955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1897559950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a81250a2e3546634a8934b00adaeea17, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RecuperacionPasswordManager
+  inputCorreo: {fileID: 1367137348}
+  inputCodigo: {fileID: 32776828}
+  inputNuevaPassword: {fileID: 1363648816}
+  inputConfirmarPassword: {fileID: 1018046761}
+  mensajeError: {fileID: 1616376273}
+  mensajeErrorCodigo: {fileID: 1781221567}
+  mensajeErrorPassword: {fileID: 313681052}
+  pantallaRecuperar: {fileID: 536755625}
+  pantallaCodigo: {fileID: 782013538}
+  pantallaNuevaPassword: {fileID: 536755625}
+  pantallaLogin: {fileID: 664005715}
 --- !u!1 &1906611635
 GameObject:
   m_ObjectHideFlags: 0
@@ -14827,8 +14911,8 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 782013540}
-        m_TargetAssemblyTypeName: CodigoManager, Assembly-CSharp
+      - m_Target: {fileID: 311677262}
+        m_TargetAssemblyTypeName: RecuperacionPasswordManager, Assembly-CSharp
         m_MethodName: VerificarCodigo
         m_Mode: 1
         m_Arguments:
