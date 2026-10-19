@@ -50,6 +50,16 @@ namespace ControlReactor.Datos.Repositorios
             await _context.SaveChangesAsync();
         }
 
+        public async Task<List<JugadorPartida>> ObtenerPorUsuarioAsync(int idUsuario)
+        {
+            return await _context.JugadoresPartida
+                .AsNoTracking()
+                .Include(j => j.Partida)
+                .Where(j => j.IdUsuario == idUsuario)
+                .OrderByDescending(j => j.Partida.FechaInicio)
+                .ToListAsync();
+        }
+
 
     }
 }
