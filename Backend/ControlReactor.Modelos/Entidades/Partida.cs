@@ -3,6 +3,10 @@ namespace ControlReactor.Modelos.Entidades
     public class Partida
     {
         public int IdPartida { get; set; }
+        
+        public string? CodigoSala { get; set; }
+
+        public int? IdUsuarioCreador { get; set; }
 
         public DateTime FechaInicio { get; set; }
 

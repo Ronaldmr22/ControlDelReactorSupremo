@@ -148,6 +148,9 @@ namespace ControlReactor.Datos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdPartida"));
 
+                    b.Property<string>("CodigoSala")
+                        .HasColumnType("text");
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasColumnType("text");
@@ -157,6 +160,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("IdUsuarioCreador")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("LimiteTiempo")
                         .HasColumnType("integer");
@@ -172,6 +178,9 @@ namespace ControlReactor.Datos.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("IdPartida");
+
+                    b.HasIndex("CodigoSala")
+                        .IsUnique();
 
                     b.ToTable("Partidas");
                 });
