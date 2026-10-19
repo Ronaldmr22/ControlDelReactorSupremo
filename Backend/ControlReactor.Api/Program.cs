@@ -5,6 +5,7 @@ using ControlReactor.Negocio.Interfaces;
 using ControlReactor.Datos.Repositorios;
 using ControlReactor.Modelos.DTOs;
 using ControlReactor.Api.Servicios;
+using ControlReactor.Modelos.Entidades;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,8 @@ builder.Services.AddScoped<ServicioRecuperacionPassword>();
 
 builder.Services.AddScoped<ServicioAvatarUsuario>();
 builder.Services.AddScoped<ServicioFotoPerfil>();
+
+builder.Services.AddScoped<ServicioLogros>();
 
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
@@ -560,12 +563,10 @@ app.MapGet("/api/usuarios/{idUsuario:int}/perfil", async (
     ControlReactorDbContext db) =>
 {
     if (idUsuario <= 0)
-    {
         return Results.BadRequest(new
         {
-            mensaje = "El ID del usuario no es válido."
+            mensaje = "ID de usuario inválido."
         });
-    }
 
     var usuario = await db.Usuarios
         .AsNoTracking()
@@ -574,20 +575,140 @@ app.MapGet("/api/usuarios/{idUsuario:int}/perfil", async (
         {
             idUsuario = u.IdUsuario,
             nombreUsuario = u.NombreUsuario,
+            correo = u.Correo,
+            correoVerificado = u.CorreoVerificado,
             avatarSeleccionado = u.AvatarSeleccionado,
             urlFotoPerfil = u.UrlFotoPerfil
         })
         .FirstOrDefaultAsync();
 
     if (usuario == null)
-    {
+        return Results.NotFound(new
+        {
+            mensaje = "Usuario no encontrado."
+        });
+
+    return Results.Ok(usuario);
+});
+
+// Consulta las estadísticas históricas de un usuario.
+app.MapGet("/api/usuarios/{idUsuario:int}/estadisticas", async (
+    int idUsuario,
+    ControlReactorDbContext db,
+    IJugadorPartidaRepositorio jugadorRepositorio,
+    ServicioLogros servicioLogros) =>
+{
+    if (idUsuario <= 0)
+        return Results.BadRequest(new
+        {
+            mensaje = "ID de usuario inválido."
+        });
+
+    var existeUsuario = await db.Usuarios
+        .AnyAsync(u => u.IdUsuario == idUsuario);
+
+    if (!existeUsuario)
         return Results.NotFound(new
         {
             mensaje = "El usuario no existe."
         });
+
+    var participaciones = await jugadorRepositorio
+        .ObtenerPorUsuarioAsync(idUsuario);
+
+    // Solo contabilizamos partidas finalizadas.
+    var finalizadas = participaciones
+        .Where(j => j.Partida.FechaFin != null)
+        .ToList();
+
+    int partidasJugadas = finalizadas.Count;
+    int partidasGanadas = finalizadas.Count(j => j.EsGanador);
+    int partidasPerdidas = partidasJugadas - partidasGanadas;
+    int puntosTotales = finalizadas.Sum(j => j.Puntaje);
+
+    var historial = finalizadas.Select(j => new
+    {
+        idPartida = j.IdPartida,
+        fechaInicio = j.Partida.FechaInicio,
+        fechaFin = j.Partida.FechaFin,
+        puntaje = j.Puntaje,
+        esGanador = j.EsGanador
+    });
+
+    // Calcular la posición del usuario en el ranking global.
+    var rankingGlobal = await db.JugadoresPartida
+        .AsNoTracking()
+        .Where(j => j.Partida.FechaFin != null)
+        .GroupBy(j => j.IdUsuario)
+        .Select(g => new
+        {
+            idUsuario = g.Key,
+            puntosTotales = g.Sum(j => j.Puntaje),
+            partidasGanadas = g.Count(j => j.EsGanador)
+        })
+        .OrderByDescending(j => j.puntosTotales)
+        .ThenByDescending(j => j.partidasGanadas)
+        .ThenBy(j => j.idUsuario)
+        .ToListAsync();
+
+    int? posicionRanking = null;
+
+    for (int i = 0; i < rankingGlobal.Count; i++)
+    {
+        if (rankingGlobal[i].idUsuario == idUsuario)
+        {
+            posicionRanking = i + 1;
+            break;
+        }
     }
 
-    return Results.Ok(usuario);
+    var logros = servicioLogros.ObtenerLogros(
+    partidasJugadas,
+    partidasGanadas);
+
+    return Results.Ok(new
+    {
+        idUsuario,
+        partidasJugadas,
+        partidasGanadas,
+        partidasPerdidas,
+        puntosTotales,
+        posicionRanking,
+        logros,
+        historialPartidas = historial
+    });
+});
+
+// Ranking global de jugadores según puntos históricos.
+app.MapGet("/api/usuarios/ranking", async (
+    ControlReactorDbContext db) =>
+{
+    var ranking = await db.JugadoresPartida
+        .AsNoTracking()
+        .Where(j => j.Partida.FechaFin != null)
+        .GroupBy(j => j.IdUsuario)
+        .Select(g => new
+        {
+            idUsuario = g.Key,
+            puntosTotales = g.Sum(j => j.Puntaje),
+            partidasJugadas = g.Count(),
+            partidasGanadas = g.Count(j => j.EsGanador)
+        })
+        .OrderByDescending(j => j.puntosTotales)
+        .ThenByDescending(j => j.partidasGanadas)
+        .ThenBy(j => j.idUsuario)
+        .ToListAsync();
+
+    var resultado = ranking.Select((j, indice) => new
+    {
+        posicion = indice + 1,
+        j.idUsuario,
+        j.puntosTotales,
+        j.partidasJugadas,
+        j.partidasGanadas
+    });
+
+    return Results.Ok(resultado);
 });
 
 app.Run();
