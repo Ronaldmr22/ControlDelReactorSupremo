@@ -554,4 +554,40 @@ app.MapGet("/api/fotos-perfil/{nombreArchivo}", (string nombreArchivo) =>
     return Results.File(rutaArchivo, tipoContenido);
 });
 
+// Consulta la información pública del perfil de un usuario.
+app.MapGet("/api/usuarios/{idUsuario:int}/perfil", async (
+    int idUsuario,
+    ControlReactorDbContext db) =>
+{
+    if (idUsuario <= 0)
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = "El ID del usuario no es válido."
+        });
+    }
+
+    var usuario = await db.Usuarios
+        .AsNoTracking()
+        .Where(u => u.IdUsuario == idUsuario)
+        .Select(u => new
+        {
+            idUsuario = u.IdUsuario,
+            nombreUsuario = u.NombreUsuario,
+            avatarSeleccionado = u.AvatarSeleccionado,
+            urlFotoPerfil = u.UrlFotoPerfil
+        })
+        .FirstOrDefaultAsync();
+
+    if (usuario == null)
+    {
+        return Results.NotFound(new
+        {
+            mensaje = "El usuario no existe."
+        });
+    }
+
+    return Results.Ok(usuario);
+});
+
 app.Run();

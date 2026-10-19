@@ -81,6 +81,12 @@ public class LoginManager : MonoBehaviour
                 string jsonRespuesta = request.downloadHandler.text;
 
                 RespuestaLogin respuesta = JsonUtility.FromJson<RespuestaLogin>(jsonRespuesta);
+
+                SesionUsuario.IdUsuario = respuesta.idUsuario;
+                SesionUsuario.NombreUsuario = respuesta.nombreUsuario;
+                Debug.Log("Usuario conectado: " + SesionUsuario.NombreUsuario);
+                Debug.Log("ID del usuario: " + SesionUsuario.IdUsuario);
+
                 mensajeLogin.text = "¡Bienvenido, " + respuesta.nombreUsuario + "!";
                 mensajeLogin.color = Color.green;
 
