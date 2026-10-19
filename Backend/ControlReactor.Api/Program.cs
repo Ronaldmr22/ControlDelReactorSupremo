@@ -17,7 +17,9 @@ builder.Services.AddScoped<ServicioCodigoVerificacion>();
 builder.Services.AddScoped<ServicioVerificacionCorreo>();
 builder.Services.AddScoped<ServicioLoginUsuario>();
 builder.Services.AddScoped<ServicioRecuperacionPassword>();
+
 builder.Services.AddScoped<ServicioAvatarUsuario>();
+builder.Services.AddScoped<ServicioFotoPerfil>();
 
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
@@ -360,36 +362,196 @@ app.MapPut("/api/usuarios/avatar", async (
     });
 });
 
-
-if (app.Configuration.GetValue<bool>("HabilitarPruebaAlmacenamiento"))
-{
-    app.MapGet("/api/prueba-almacenamiento", () =>
+app.MapPost("/api/usuarios/foto-perfil",
+    async (HttpRequest request, ServicioFotoPerfil servicio) =>
     {
+        if (!request.HasFormContentType)
+        {
+            return Results.BadRequest("Debes enviar un formulario con una imagen.");
+        }
+        const long limiteSolicitud = 3 * 1024 * 1024; // 3 MB
+
+        if (request.ContentLength > limiteSolicitud)
+        {
+            return Results.BadRequest(
+                "La solicitud supera el tamaño permitido.");
+        }
+
+        var formulario = await request.ReadFormAsync();
+
+        if (!int.TryParse(formulario["idUsuario"], out int idUsuario)
+            || idUsuario <= 0)
+        {
+            return Results.BadRequest("El ID del usuario no es válido.");
+        }
+
+        var foto = formulario.Files.GetFile("foto");
+
+        if (foto == null || foto.Length == 0)
+        {
+            return Results.BadRequest("Debes seleccionar una fotografía.");
+        }
+        const long tamañoMaximo = 2 * 1024 * 1024; // 2 MB
+
+        if (foto.Length > tamañoMaximo)
+        {
+            return Results.BadRequest("La fotografía no puede superar los 2 MB.");
+        }
+
+        string extension = Path.GetExtension(foto.FileName).ToLowerInvariant();
+
+        string[] extensionesPermitidas =
+        {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".webp"
+        };
+
+        if (!extensionesPermitidas.Contains(extension))
+        {
+            return Results.BadRequest("Solo se permiten imágenes JPG, JPEG, PNG o WebP.");
+        }
+
+        byte[] encabezado = new byte[12];
+
+        using (var stream = foto.OpenReadStream())
+        {
+            int leidos = await stream.ReadAsync(encabezado);
+
+            if (leidos < 12)
+            {
+                return Results.BadRequest("La imagen no es válida.");
+            }
+        }
+
+        bool esJpg =
+            encabezado[0] == 0xFF &&
+            encabezado[1] == 0xD8 &&
+            encabezado[2] == 0xFF;
+
+        bool esPng =
+            encabezado[0] == 0x89 &&
+            encabezado[1] == 0x50 &&
+            encabezado[2] == 0x4E &&
+            encabezado[3] == 0x47 &&
+            encabezado[4] == 0x0D &&
+            encabezado[5] == 0x0A &&
+            encabezado[6] == 0x1A &&
+            encabezado[7] == 0x0A;
+
+        bool esWebp =
+            encabezado[0] == 'R' &&
+            encabezado[1] == 'I' &&
+            encabezado[2] == 'F' &&
+            encabezado[3] == 'F' &&
+            encabezado[8] == 'W' &&
+            encabezado[9] == 'E' &&
+            encabezado[10] == 'B' &&
+            encabezado[11] == 'P';
+
+        bool formatoValido = extension switch
+        {
+            ".jpg" or ".jpeg" => esJpg,
+            ".png" => esPng,
+            ".webp" => esWebp,
+            _ => false
+        };
+
+        if (!formatoValido)
+        {
+            return Results.BadRequest("El contenido del archivo no coincide con un formato de imagen permitido.");
+        }
+
+        string carpeta = app.Environment.IsDevelopment()
+            ? Path.Combine(app.Environment.ContentRootPath, "FotosPerfil")
+            : "/home/FotosPerfil";
+
+        Directory.CreateDirectory(carpeta);
+
+        // Generamos un nombre único para evitar archivos repetidos.
+        string nombreArchivo = $"{Guid.NewGuid():N}{extension}";
+
+        string rutaArchivo = Path.Combine(carpeta, nombreArchivo);
+
+        // Guardamos la fotografía.
         try
         {
-            string carpeta = "/home/FotosPerfil";
-
-            Directory.CreateDirectory(carpeta);
-
-            string archivo = Path.Combine(carpeta, "prueba-api.txt");
-
-            File.WriteAllText(archivo, "Prueba desde Control del Reactor");
-
-            return Results.Ok(new
+            // Guardar la fotografía en el servidor.
+            await using (var stream = new FileStream(
+                rutaArchivo,
+                FileMode.CreateNew,
+                FileAccess.Write))
             {
-                mensaje = "La API puede escribir en /home.",
-                contenido = File.ReadAllText(archivo)
-            });
-        }
-        catch
-        {
-            return Results.Problem(
-                "No se pudo escribir en /home.",
-                statusCode: 500
-            );
-        }
-    });
-}
+                await foto.CopyToAsync(stream);
+            }
 
+            // Construir la URL de la fotografía.
+            string urlFoto = app.Environment.IsDevelopment()
+                ? $"http://localhost:5008/api/fotos-perfil/{nombreArchivo}"
+                : $"https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net/api/fotos-perfil/{nombreArchivo}";
+
+            // Guardar la URL en PostgreSQL.
+            var resultado = await servicio.ActualizarFotoAsync(idUsuario, urlFoto);
+
+            if (!resultado.Exito)
+            {
+                File.Delete(rutaArchivo);
+
+                return Results.BadRequest(resultado.Mensaje);
+            }
+        }
+        catch (Exception)
+        {
+            // Eliminar la fotografía si ocurrió algún error.
+            if (File.Exists(rutaArchivo))
+            {
+                File.Delete(rutaArchivo);
+            }
+
+            return Results.Problem(
+                "Ocurrió un error al guardar la fotografía.",
+                statusCode: 500);
+        }
+
+        return Results.Ok(new
+        {
+            mensaje = "Fotografía guardada correctamente.",
+            archivo = nombreArchivo,
+            idUsuario
+        });
+});
+
+app.MapGet("/api/fotos-perfil/{nombreArchivo}", (string nombreArchivo) =>
+{
+    // Evitar rutas como ../ y nombres inesperados
+    if (!System.Text.RegularExpressions.Regex.IsMatch(
+        nombreArchivo,
+        @"^[a-fA-F0-9]{32}\.(jpg|jpeg|png|webp)$"))
+    {
+        return Results.BadRequest("Nombre de archivo no válido.");
+    }
+
+    string carpeta = app.Environment.IsDevelopment()
+        ? Path.Combine(app.Environment.ContentRootPath, "FotosPerfil")
+        : "/home/FotosPerfil";
+
+    string rutaArchivo = Path.Combine(carpeta, nombreArchivo);
+
+    if (!File.Exists(rutaArchivo))
+    {
+        return Results.NotFound("Fotografía no encontrada.");
+    }
+
+    string tipoContenido = Path.GetExtension(nombreArchivo).ToLowerInvariant() switch
+    {
+        ".jpg" or ".jpeg" => "image/jpeg",
+        ".png" => "image/png",
+        ".webp" => "image/webp",
+        _ => "application/octet-stream"
+    };
+
+    return Results.File(rutaArchivo, tipoContenido);
+});
 
 app.Run();
