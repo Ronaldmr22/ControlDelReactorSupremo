@@ -38,6 +38,7 @@ builder.Services.AddScoped<IUsuarioRepositorio, UsuarioRepositorio>();
 builder.Services.AddScoped<ICodigoVerificacionRepositorio, CodigoVerificacionRepositorio>();
 builder.Services.AddScoped<IJugadorPartidaRepositorio, JugadorPartidaRepositorio>();
 builder.Services.AddScoped<IPartidaRepositorio, PartidaRepositorio>();
+builder.Services.AddScoped<ISalaRepositorio, SalaRepositorio>();
 builder.Services.AddScoped<ICodigoRecuperacionRepositorio, CodigoRecuperacionRepositorio>();
 
 // Creacion de la conexion con  PostgreSQL
@@ -719,6 +720,44 @@ app.MapGet("/api/usuarios/ranking", async (
     });
 
     return Results.Ok(resultado);
+});
+app.MapPost("/api/salas", async (
+    CrearSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.CrearAsync(datos.IdUsuario);
+
+    if (resultado.Sala == null)
+        return Results.BadRequest(new { mensaje = resultado.Mensaje });
+
+    return Results.Ok(resultado.Sala);
+});
+
+// Incorpora un usuario mediante el código de sala.
+app.MapPost("/api/salas/unirse", async (
+    UnirseSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.UnirseAsync(
+        datos.IdUsuario, datos.CodigoSala);
+
+    if (resultado.Sala == null)
+        return Results.BadRequest(new { mensaje = resultado.Mensaje });
+
+    return Results.Ok(resultado.Sala);
+});
+
+// Consulta el estado y los participantes de una sala.
+app.MapGet("/api/salas/{codigoSala}", async (
+    string codigoSala,
+    ISalaRepositorio repositorio) =>
+{
+    var sala = await repositorio.ObtenerPorCodigoAsync(codigoSala);
+
+    if (sala == null)
+        return Results.NotFound(new { mensaje = "La sala no existe." });
+
+    return Results.Ok(sala);
 });
 
 app.Run();
