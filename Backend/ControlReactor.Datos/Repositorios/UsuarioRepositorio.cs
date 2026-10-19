@@ -44,5 +44,10 @@ namespace ControlReactor.Datos.Repositorios
             _context.Usuarios.Update(usuario);
             await _context.SaveChangesAsync();
         }
+        public async Task<Usuario?> ObtenerPorIdAsync(int idUsuario)
+        {
+            return await _context.Usuarios.FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
+        }
+
     }
 }

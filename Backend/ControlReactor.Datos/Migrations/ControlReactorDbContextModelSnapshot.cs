@@ -184,8 +184,8 @@ namespace ControlReactor.Datos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdUsuario"));
 
-                    b.Property<string>("AvatarSeleccionado")
-                        .HasColumnType("text");
+                    b.Property<int?>("AvatarSeleccionado")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Correo")
                         .IsRequired()
@@ -200,6 +200,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UrlFotoPerfil")
                         .HasColumnType("text");
 
                     b.HasKey("IdUsuario");

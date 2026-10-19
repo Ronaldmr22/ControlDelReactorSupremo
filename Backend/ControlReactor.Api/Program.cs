@@ -17,6 +17,7 @@ builder.Services.AddScoped<ServicioCodigoVerificacion>();
 builder.Services.AddScoped<ServicioVerificacionCorreo>();
 builder.Services.AddScoped<ServicioLoginUsuario>();
 builder.Services.AddScoped<ServicioRecuperacionPassword>();
+builder.Services.AddScoped<ServicioAvatarUsuario>();
 
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
@@ -334,6 +335,61 @@ app.MapPost("/api/usuarios/cambiar-password", async (
         mensaje = resultado.Mensaje
     });
 });
+
+
+app.MapPut("/api/usuarios/avatar", async (
+    ActualizarAvatarDto dto,
+    ServicioAvatarUsuario servicio) =>
+{
+    var resultado = await servicio.ActualizarAvatarAsync(
+        dto.IdUsuario,
+        dto.AvatarSeleccionado
+    );
+
+    if (!resultado.Exito)
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+    }
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
+
+
+if (app.Configuration.GetValue<bool>("HabilitarPruebaAlmacenamiento"))
+{
+    app.MapGet("/api/prueba-almacenamiento", () =>
+    {
+        try
+        {
+            string carpeta = "/home/FotosPerfil";
+
+            Directory.CreateDirectory(carpeta);
+
+            string archivo = Path.Combine(carpeta, "prueba-api.txt");
+
+            File.WriteAllText(archivo, "Prueba desde Control del Reactor");
+
+            return Results.Ok(new
+            {
+                mensaje = "La API puede escribir en /home.",
+                contenido = File.ReadAllText(archivo)
+            });
+        }
+        catch
+        {
+            return Results.Problem(
+                "No se pudo escribir en /home.",
+                statusCode: 500
+            );
+        }
+    });
+}
 
 
 app.Run();
