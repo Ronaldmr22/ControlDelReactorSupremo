@@ -562,11 +562,14 @@ app.MapGet("/api/usuarios/{idUsuario:int}/perfil", async (
     int idUsuario,
     ControlReactorDbContext db) =>
 {
+
     if (idUsuario <= 0)
+    {
         return Results.BadRequest(new
         {
-            mensaje = "ID de usuario inválido."
+            mensaje = "El ID del usuario no es válido."
         });
+    } 
 
     var usuario = await db.Usuarios
         .AsNoTracking()
@@ -578,20 +581,23 @@ app.MapGet("/api/usuarios/{idUsuario:int}/perfil", async (
             correo = u.Correo,
             correoVerificado = u.CorreoVerificado,
             avatarSeleccionado = u.AvatarSeleccionado,
-            urlFotoPerfil = u.UrlFotoPerfil
+            urlFotoPerfil = u.UrlFotoPerfil     
         })
         .FirstOrDefaultAsync();
 
     if (usuario == null)
+    {
         return Results.NotFound(new
         {
-            mensaje = "Usuario no encontrado."
+            mensaje = "El usuario no existe."
         });
+      
+        }
 
     return Results.Ok(usuario);
 });
 
-// Consulta las estadísticas históricas de un usuario.
+// Consulta las estadísticas históricas del usuario.
 app.MapGet("/api/usuarios/{idUsuario:int}/estadisticas", async (
     int idUsuario,
     ControlReactorDbContext db,
@@ -599,19 +605,23 @@ app.MapGet("/api/usuarios/{idUsuario:int}/estadisticas", async (
     ServicioLogros servicioLogros) =>
 {
     if (idUsuario <= 0)
+    {
         return Results.BadRequest(new
         {
             mensaje = "ID de usuario inválido."
         });
+    }
 
     var existeUsuario = await db.Usuarios
         .AnyAsync(u => u.IdUsuario == idUsuario);
 
     if (!existeUsuario)
+    {
         return Results.NotFound(new
         {
             mensaje = "El usuario no existe."
         });
+    }
 
     var participaciones = await jugadorRepositorio
         .ObtenerPorUsuarioAsync(idUsuario);
