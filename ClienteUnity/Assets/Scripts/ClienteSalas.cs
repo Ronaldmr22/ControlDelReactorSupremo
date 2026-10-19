@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 public class ClienteSalas : MonoBehaviour
 {
-    [SerializeField] private string urlServidor = "http://localhost:5008";
+    [SerializeField] private string urlServidor = "https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net";
 
     public DatosSala SalaActual { get; private set; }
 
