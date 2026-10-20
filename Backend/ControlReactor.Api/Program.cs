@@ -526,6 +526,48 @@ app.MapPost("/api/usuarios/foto-perfil",
         });
 });
 
+app.MapPut("/api/usuarios/foto-perfil/predeterminada",
+    async (FotoPredeterminadaDto datos, ServicioFotoPerfil servicio) =>
+    {
+        if (datos.IdUsuario <= 0)
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "El ID del usuario no es válido."
+            });
+        }
+
+        if (datos.NumeroFoto < 1 || datos.NumeroFoto > 5)
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "La foto predeterminada debe estar entre 1 y 5."
+            });
+        }
+
+        string identificador = $"predeterminada:{datos.NumeroFoto}";
+
+        var resultado = await servicio.ActualizarFotoAsync(
+            datos.IdUsuario,
+            identificador
+        );
+
+        if (!resultado.Exito)
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = resultado.Mensaje
+            });
+        }
+
+        return Results.Ok(new
+        {
+            mensaje = "Foto predeterminada guardada correctamente.",
+            idUsuario = datos.IdUsuario,
+            urlFotoPerfil = identificador
+        });
+    });
+
 app.MapGet("/api/fotos-perfil/{nombreArchivo}", (string nombreArchivo) =>
 {
     // Evitar rutas como ../ y nombres inesperados
