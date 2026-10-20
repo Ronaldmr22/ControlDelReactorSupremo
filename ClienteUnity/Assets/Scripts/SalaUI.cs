@@ -252,6 +252,8 @@ public class SalaUI : MonoBehaviour
     }
     public void IniciarPartida()
     {
+        Debug.Log("BOTÓN INICIAR PARTIDA PRESIONADO");
+
         if (ocupado || entrandoPartida)
             return;
 
@@ -272,17 +274,19 @@ public class SalaUI : MonoBehaviour
         textoEstadoSala.text = "Iniciando partida...";
 
         StartCoroutine(cliente.IniciarPartida(
-            () =>
-            {
-                textoEstadoSala.text = "Esperando confirmación...";
-                CambiarOcupado(false);
-            },
-            error =>
-            {
-                textoEstadoSala.text = error;
-                CambiarOcupado(false);
-                MostrarSala(cliente.SalaActual);
-            }));
+        () =>
+        {
+            Debug.Log("AZURE: Partida iniciada correctamente");
+            textoEstadoSala.text = "Esperando confirmación...";
+            CambiarOcupado(false);
+        },
+        error =>
+        {
+            Debug.LogError("AZURE: Error al iniciar partida: " + error);
+            textoEstadoSala.text = error;
+            CambiarOcupado(false);
+            MostrarSala(cliente.SalaActual);
+        }));
     }
 
     private void EntrarPartida(DatosSala sala)
