@@ -2,6 +2,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class SalaUI : MonoBehaviour
 {
@@ -26,6 +27,7 @@ public class SalaUI : MonoBehaviour
 
     private bool ocupado;
     private Coroutine actualizacionSala;
+    private bool entrandoPartida;
 
     private void Awake()
     {
@@ -121,8 +123,11 @@ public class SalaUI : MonoBehaviour
 
         botonConfiguracion.SetActive(soyCreador);
 
-        // Se habilitará cuando implementemos el inicio en el servidor.
-        botonIniciar.interactable = false;
+        botonIniciar.interactable = soyCreador &&
+        cantidad >= 2 &&
+        sala.estado == "ESPERANDO" &&
+        !ocupado &&
+        !entrandoPartida; 
     }
 
     private void CambiarOcupado(bool valor)
@@ -181,24 +186,24 @@ public class SalaUI : MonoBehaviour
     {
         string ultimoContenido = "";
 
-        while (cliente.SalaActual != null)
+        while (cliente.SalaActual != null && !entrandoPartida)
         {
             yield return new WaitForSecondsRealtime(5f);
 
-            if (cliente.SalaActual == null)
+            if (cliente.SalaActual == null || entrandoPartida)
                 yield break;
 
-            // Mantiene la presencia incluso mientras editamos la configuración.
-            yield return cliente.RegistrarActividad(
-                () => { },
-                error => textoEstadoSala.text = error);
-
-            if (cliente.SalaActual == null)
-                yield break;
+            bool salaEnEspera = false;
 
             yield return cliente.ConsultarSala(
                 sala =>
                 {
+                    if (sala.estado == "INICIADA")
+                    {
+                        EntrarPartida(sala);
+                        return;
+                    }
+
                     if (sala.estado == "CANCELADA")
                     {
                         VolverAlLobby("El creador cerró la sala.");
@@ -216,6 +221,8 @@ public class SalaUI : MonoBehaviour
                         return;
                     }
 
+                    salaEnEspera = sala.estado == "ESPERANDO";
+
                     string contenido = JsonUtility.ToJson(sala);
 
                     if (pantallaSala.activeInHierarchy &&
@@ -230,6 +237,72 @@ public class SalaUI : MonoBehaviour
                     textoEstadoSala.text = error;
                     ultimoContenido = "";
                 });
+
+            if (!salaEnEspera ||
+                cliente.SalaActual == null ||
+                entrandoPartida)
+            {
+                continue;
+            }
+
+            yield return cliente.RegistrarActividad(
+                () => { },
+                error => textoEstadoSala.text = error);
         }
+    }
+    public void IniciarPartida()
+    {
+        Debug.Log("BOTÓN INICIAR PARTIDA PRESIONADO");
+
+        if (ocupado || entrandoPartida)
+            return;
+
+        DatosSala sala = cliente.SalaActual;
+
+        if (sala == null)
+            return;
+
+        bool soyCreador =
+            sala.idUsuarioCreador == SesionUsuario.IdUsuario;
+
+        if (!soyCreador || sala.participantes == null ||
+            sala.participantes.Length < 2)
+            return;
+
+        CambiarOcupado(true);
+        botonIniciar.interactable = false;
+        textoEstadoSala.text = "Iniciando partida...";
+
+        StartCoroutine(cliente.IniciarPartida(
+        () =>
+        {
+            Debug.Log("AZURE: Partida iniciada correctamente");
+            textoEstadoSala.text = "Esperando confirmación...";
+            CambiarOcupado(false);
+        },
+        error =>
+        {
+            Debug.LogError("AZURE: Error al iniciar partida: " + error);
+            textoEstadoSala.text = error;
+            CambiarOcupado(false);
+            MostrarSala(cliente.SalaActual);
+        }));
+    }
+
+    private void EntrarPartida(DatosSala sala)
+    {
+        if (entrandoPartida)
+            return;
+
+        entrandoPartida = true;
+
+        if (actualizacionSala != null)
+        {
+            StopCoroutine(actualizacionSala);
+            actualizacionSala = null;
+        }
+
+        ContextoPartida.Guardar(sala);
+        SceneManager.LoadScene("Mapa1");
     }
 }
