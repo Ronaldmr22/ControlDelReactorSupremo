@@ -760,4 +760,32 @@ app.MapGet("/api/salas/{codigoSala}", async (
     return Results.Ok(sala);
 });
 
+// Confirma que el participante sigue conectado.
+app.MapPost("/api/salas/actividad", async (
+    UnirseSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.RegistrarActividadAsync(
+        datos.IdUsuario, datos.CodigoSala);
+
+    if (!resultado.Exito)
+        return Results.BadRequest(new { mensaje = resultado.Mensaje });
+
+    return Results.Ok(new { mensaje = resultado.Mensaje });
+});
+
+// Libera el espacio del participante.
+app.MapPost("/api/salas/salir", async (
+    UnirseSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.SalirAsync(
+        datos.IdUsuario, datos.CodigoSala);
+
+    if (!resultado.Exito)
+        return Results.BadRequest(new { mensaje = resultado.Mensaje });
+
+    return Results.Ok(new { mensaje = resultado.Mensaje });
+});
+
 app.Run();
