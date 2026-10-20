@@ -147,3 +147,6 @@ appsettings.*.Local.json
 # Logs
 *.log
 logs/
+
+# Fotografías de perfil almacenadas localmente
+Backend/ControlReactor.Api/FotosPerfil/

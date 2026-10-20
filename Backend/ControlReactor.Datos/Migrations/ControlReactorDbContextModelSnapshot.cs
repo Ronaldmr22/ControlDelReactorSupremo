@@ -22,6 +22,40 @@ namespace ControlReactor.Datos.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoRecuperacion", b =>
+                {
+                    b.Property<int>("IdCodigoRecuperacion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdCodigoRecuperacion"));
+
+                    b.Property<string>("CodigoHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("FechaExpiracion")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("IntentosFallidos")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("Utilizado")
+                        .HasColumnType("boolean");
+
+                    b.HasKey("IdCodigoRecuperacion");
+
+                    b.HasIndex("IdUsuario");
+
+                    b.ToTable("CodigosRecuperacion");
+                });
+
             modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoVerificacion", b =>
                 {
                     b.Property<int>("IdCodigoVerificacion")
@@ -64,6 +98,9 @@ namespace ControlReactor.Datos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdJugadorPartida"));
 
+                    b.Property<bool>("EnSala")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("EsGanador")
                         .HasColumnType("boolean");
 
@@ -75,6 +112,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<int>("Puntaje")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UltimaActividadUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("IdJugadorPartida");
 
@@ -114,6 +154,9 @@ namespace ControlReactor.Datos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdPartida"));
 
+                    b.Property<string>("CodigoSala")
+                        .HasColumnType("text");
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasColumnType("text");
@@ -123,6 +166,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("IdUsuarioCreador")
+                        .HasColumnType("integer");
 
                     b.Property<int?>("LimiteTiempo")
                         .HasColumnType("integer");
@@ -139,6 +185,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.HasKey("IdPartida");
 
+                    b.HasIndex("CodigoSala")
+                        .IsUnique();
+
                     b.ToTable("Partidas");
                 });
 
@@ -150,8 +199,8 @@ namespace ControlReactor.Datos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdUsuario"));
 
-                    b.Property<string>("AvatarSeleccionado")
-                        .HasColumnType("text");
+                    b.Property<int?>("AvatarSeleccionado")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Correo")
                         .IsRequired()
@@ -166,6 +215,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UrlFotoPerfil")
                         .HasColumnType("text");
 
                     b.HasKey("IdUsuario");
@@ -203,6 +255,17 @@ namespace ControlReactor.Datos.Migrations
                     b.HasIndex("IdUsuario");
 
                     b.ToTable("UsuariosLogros");
+                });
+
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoRecuperacion", b =>
+                {
+                    b.HasOne("ControlReactor.Modelos.Entidades.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("ControlReactor.Modelos.Entidades.CodigoVerificacion", b =>

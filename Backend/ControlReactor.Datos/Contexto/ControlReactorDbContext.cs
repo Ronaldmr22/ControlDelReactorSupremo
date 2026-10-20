@@ -10,17 +10,12 @@ namespace ControlReactor.Datos.Contexto
         }
 
         public DbSet<Usuario> Usuarios { get; set; }
-
         public DbSet<Partida> Partidas { get; set; }
-
         public DbSet<JugadorPartida> JugadoresPartida { get; set; }
-
         public DbSet<Logro> Logros { get; set; }
-
         public DbSet<UsuarioLogro> UsuariosLogros { get; set; }
         public DbSet<CodigoVerificacion> CodigosVerificacion { get; set; }
-
-
+        public DbSet<CodigoRecuperacion> CodigosRecuperacion { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -34,6 +29,9 @@ namespace ControlReactor.Datos.Contexto
 
             // PARTIDA
             modelBuilder.Entity<Partida>().HasKey(p => p.IdPartida);
+            modelBuilder.Entity<Partida>()
+            .HasIndex(p => p.CodigoSala)
+            .IsUnique();
 
             // JUGADOR - PARTIDA
             modelBuilder.Entity<JugadorPartida>().HasKey(jp => jp.IdJugadorPartida);
@@ -57,6 +55,9 @@ namespace ControlReactor.Datos.Contexto
 
             modelBuilder.Entity<CodigoVerificacion>().HasOne(c => c.Usuario).WithMany().HasForeignKey(c => c.IdUsuario);
         
+            // CÓDIGO DE RECUPERACIÓN DE CONTRASEÑA
+            modelBuilder.Entity<CodigoRecuperacion>().HasKey(c => c.IdCodigoRecuperacion);
+            modelBuilder.Entity<CodigoRecuperacion>().HasOne(c => c.Usuario).WithMany().HasForeignKey(c => c.IdUsuario);
         }
     }
 }

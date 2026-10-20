@@ -9,5 +9,7 @@ namespace ControlReactor.Negocio.Interfaces
         Task<Usuario> CrearAsync(Usuario usuario);
         Task<Usuario?> ObtenerPorCorreoAsync(string correo);
         Task ActualizarAsync(Usuario usuario);
+        Task<Usuario?> ObtenerPorIdAsync(int idUsuario);
+
     }
 }

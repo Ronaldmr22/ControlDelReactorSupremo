@@ -6,12 +6,12 @@ using BattleArena.Core;
 [RequireComponent(typeof(MensajeSobreAvatar))] 
 public class MovimientoPrueba : MonoBehaviour
 {
-    // Aparece en el Inspector para ajustarlo sin tocar el cÛdigo
+    // Aparece en el Inspector para ajustarlo sin tocar el c√≥digo
     [SerializeField] private float velocidad = 5f;
 
-    private Rigidbody2D cuerpo;                // Cuerpo fÌsico que se mueve y choca
-    private FuenteEntradaTeclado entrada;      // De aquÌ salen los comandos
-    private Vector2 direccion;                 // Par (x, y): hacia dÛnde quiere ir
+    private Rigidbody2D cuerpo;                // Cuerpo f√≠sico que se mueve y choca
+    private FuenteEntradaTeclado entrada;      // De aqu√≠ salen los comandos
+    private Vector2 direccion;                 // Par (x, y): hacia d√≥nde quiere ir
     private MensajeSobreAvatar mensaje;
 
     // Unity la llama sola, una vez, al cargar el objeto.
@@ -25,28 +25,28 @@ public class MovimientoPrueba : MonoBehaviour
     // Unity la llama sola en cada cuadro.
     private void Update()
     {
-        // Lee los ejes de la pizarra y arma la direcciÛn deseada.
+        // Lee los ejes de la pizarra y arma la direcci√≥n deseada.
         direccion = new Vector2(entrada.Estado.EjeHorizontal, entrada.Estado.EjeVertical);
 
-        // Si hay una acciÛn pendiente, se ejecuta (una sola vez por pulsaciÛn).
+        // Si hay una acci√≥n pendiente, se ejecuta (una sola vez por pulsaci√≥n).
         if (entrada.Estado.ConsumeAction())
         {
             EjecutarAccion();
         }
     }
 
-    // Unity la llama sola a intervalos fijos, sincronizada con la fÌsica.
+    // Unity la llama sola a intervalos fijos, sincronizada con la f√≠sica.
     private void FixedUpdate()
     {
-        // normalized: la diagonal no es m·s r·pida que ir en lÌnea recta.
+        // normalized: la diagonal no es m√°s r√°pida que ir en l√≠nea recta.
         cuerpo.linearVelocity = direccion.normalized * velocidad;
     }
 
-    // Lo que pasa cuando el jugador pulsa AcciÛn (Pendiente).
+    // Lo que pasa cuando el jugador pulsa Acci√≥n (Pendiente).
     private void EjecutarAccion()
     {
-        Debug.Log("AcciÛn ejecutada por " + entrada.Estado.PlayerId);
-        mensaje.Mostrar("AcciÛn");
+        Debug.Log("Acci√≥n ejecutada por " + entrada.Estado.PlayerId);
+        mensaje.Mostrar("Acci√≥n");
         // AvisarAlOtroJugador();  // Cuando exista la red
     }
 }

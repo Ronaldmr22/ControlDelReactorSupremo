@@ -1,0 +1,726 @@
+fileFormatVersion: 2
+guid: 5da9abbf99e97f74d941eae5175204e6
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -7049103514410413297
+    second: personajes_0
+  - first:
+      213: 546624286021485963
+    second: personajes_1
+  - first:
+      213: 921939107963088460
+    second: personajes_2
+  - first:
+      213: -1247894018666553155
+    second: personajes_3
+  - first:
+      213: -3447738649475369362
+    second: personajes_4
+  - first:
+      213: -2379475321107421134
+    second: personajes_5
+  - first:
+      213: -503901180175678524
+    second: personajes_6
+  - first:
+      213: 8946705397102689618
+    second: personajes_7
+  - first:
+      213: -5505311032467051082
+    second: personajes_8
+  - first:
+      213: -8979315964800192852
+    second: personajes_9
+  - first:
+      213: -5215995643184021239
+    second: personajes_10
+  - first:
+      213: 2615503336063654503
+    second: personajes_11
+  - first:
+      213: -7974172980471477819
+    second: personajes_12
+  - first:
+      213: 210158189145251922
+    second: personajes_13
+  - first:
+      213: -8990989454564422459
+    second: personajes_14
+  - first:
+      213: 8079856693515468748
+    second: personajes_15
+  - first:
+      213: -8820611735057872096
+    second: personajes_16
+  - first:
+      213: 2764354254071858868
+    second: personajes_17
+  - first:
+      213: -3157774789737742378
+    second: personajes_18
+  - first:
+      213: 3555269399485174924
+    second: personajes_19
+  - first:
+      213: -4986457712948966068
+    second: personajes_20
+  - first:
+      213: -4525348155893145611
+    second: personajes_21
+  - first:
+      213: -259766494236850342
+    second: personajes_22
+  - first:
+      213: 1192030203327117935
+    second: personajes_23
+  - first:
+      213: 1365448789777154073
+    second: personajes_24
+  - first:
+      213: 4198066326613850162
+    second: personajes_25
+  - first:
+      213: 1364267662637829779
+    second: personajes_26
+  - first:
+      213: 8618464092677942025
+    second: personajes_27
+  - first:
+      213: -6207630951590502933
+    second: personajes_28
+  - first:
+      213: -2807883358696216636
+    second: personajes_29
+  - first:
+      213: -2491046693880665716
+    second: personajes_30
+  - first:
+      213: 5506848263174021956
+    second: personajes_31
+  - first:
+      213: 6033056114807278358
+    second: personajes_32
+  - first:
+      213: 7043008718251831072
+    second: personajes_33
+  - first:
+      213: -2820575323224343157
+    second: personajes_34
+  - first:
+      213: -1862069028749304982
+    second: personajes_35
+  - first:
+      213: 2118813452652936285
+    second: personajes_36
+  - first:
+      213: 6426834498331582604
+    second: personajes_37
+  - first:
+      213: 7339439363145618530
+    second: personajes_38
+  - first:
+      213: -8262949239487900390
+    second: personajes_39
+  - first:
+      213: -8534313627840159802
+    second: personajes_40
+  - first:
+      213: -2789633222292139974
+    second: personajes_41
+  - first:
+      213: 5845631126697387338
+    second: personajes_42
+  - first:
+      213: 5460721783019287789
+    second: personajes_43
+  - first:
+      213: -1500449162169098508
+    second: personajes_44
+  - first:
+      213: 1790936332333515396
+    second: personajes_45
+  - first:
+      213: -7656339234784026447
+    second: personajes_46
+  - first:
+      213: -9165768501655479013
+    second: personajes_47
+  - first:
+      213: -4472698685506347856
+    second: personajes_48
+  - first:
+      213: -5921835398523549887
+    second: personajes_49
+  - first:
+      213: -7708039247746158173
+    second: personajes_50
+  - first:
+      213: 7637409469053513634
+    second: personajes_51
+  - first:
+      213: 4451774337845339629
+    second: personajes_52
+  - first:
+      213: 2941220710521522829
+    second: personajes_53
+  - first:
+      213: 8240929540880722558
+    second: personajes_54
+  - first:
+      213: -5915077960405378596
+    second: personajes_55
+  - first:
+      213: 5878678210132649792
+    second: personajes_56
+  - first:
+      213: 7841247780761197631
+    second: personajes_57
+  - first:
+      213: 1170884223381543414
+    second: personajes_58
+  - first:
+      213: -9148767526149858083
+    second: personajes_59
+  - first:
+      213: 661813901845713574
+    second: personajes_60
+  - first:
+      213: 7975140441688962670
+    second: personajes_61
+  - first:
+      213: -755061355134598624
+    second: personajes_62
+  - first:
+      213: 8245316955974269513
+    second: personajes_63
+  - first:
+      213: -942228382029025939
+    second: personajes_64
+  - first:
+      213: -670528180464750447
+    second: personajes_65
+  - first:
+      213: 1107474943830849204
+    second: personajes_66
+  - first:
+      213: -2393684299590070526
+    second: personajes_67
+  - first:
+      213: -8288382465660037334
+    second: personajes_68
+  - first:
+      213: 8705591337062632083
+    second: personajes_69
+  - first:
+      213: -3447439432721423604
+    second: personajes_70
+  - first:
+      213: 1425345530802136119
+    second: personajes_71
+  - first:
+      213: -8742208454828285393
+    second: personajes_72
+  - first:
+      213: -744995255059781148
+    second: personajes_73
+  - first:
+      213: -9157899614257603978
+    second: personajes_74
+  - first:
+      213: -8157192634083580811
+    second: personajes_75
+  - first:
+      213: -4592337456814960550
+    second: personajes_76
+  - first:
+      213: 4244238607370570735
+    second: personajes_77
+  - first:
+      213: 4539671434411040776
+    second: personajes_78
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 314
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: azul_abajo
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 939
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f031c9e83bd8c2e90800000000000000
+      internalID: -7049103514410413297
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: azul_izquierda
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 941
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8589e954eff59700800000000000000
+      internalID: 546624286021485963
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: azul_derecha
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 941
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c4e2eaaebb26bcc00800000000000000
+      internalID: 921939107963088460
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: azul_arriba
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 939
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db0ab0c60079eaee0800000000000000
+      internalID: -1247894018666553155
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: naranja_abajo
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 626
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e66b2a717fb2720d0800000000000000
+      internalID: -3447738649475369362
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: naranja_izquierda
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 628
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 238659d6dc76afed0800000000000000
+      internalID: -2379475321107421134
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: naranja_derecha
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 628
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c38ab1eb88c109f0800000000000000
+      internalID: -503901180175678524
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: naranja_arriba
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 628
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 25d30603825192c70800000000000000
+      internalID: 8946705397102689618
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: morada_abajo
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 315
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6bd23cbc8c43993b0800000000000000
+      internalID: -5505311032467051082
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: morada_izquierda
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 315
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cae271854bf036380800000000000000
+      internalID: -8979315964800192852
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: morada_derecha
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 315
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 901080a199f0d97b0800000000000000
+      internalID: -5215995643184021239
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: morada_arriba
+      rect:
+        serializedVersion: 2
+        x: 941
+        y: 315
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76a5ce63d622c4420800000000000000
+      internalID: 2615503336063654503
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: turquesa_abajo
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 0
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c9ca795ceb065190800000000000000
+      internalID: -7974172980471477819
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: turquesa_izquierda
+      rect:
+        serializedVersion: 2
+        x: 313
+        y: 2
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 25064a272c1aae200800000000000000
+      internalID: 210158189145251922
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: turquesa_derecha
+      rect:
+        serializedVersion: 2
+        x: 626
+        y: 2
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5cc87653ab6993380800000000000000
+      internalID: -8990989454564422459
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: turquesa_arriba
+      rect:
+        serializedVersion: 2
+        x: 939
+        y: 2
+        width: 313
+        height: 313
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ccf3d059ada612070800000000000000
+      internalID: 8079856693515468748
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 6c821efde577d644e9e833eaae960a05
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":4.0,"y":4.0},"gridSpriteSize":{"x":313.0,"y":313.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":2,"keepEmptyRects":false,"isAlternate":false}'
+    nameFileIdTable:
+      azul_abajo: -7049103514410413297
+      azul_arriba: -1247894018666553155
+      azul_derecha: 921939107963088460
+      azul_izquierda: 546624286021485963
+      morada_abajo: -5505311032467051082
+      morada_arriba: 2615503336063654503
+      morada_derecha: -5215995643184021239
+      morada_izquierda: -8979315964800192852
+      naranja_abajo: -3447738649475369362
+      naranja_arriba: 8946705397102689618
+      naranja_derecha: -503901180175678524
+      naranja_izquierda: -2379475321107421134
+      turquesa_abajo: -7974172980471477819
+      turquesa_arriba: 8079856693515468748
+      turquesa_derecha: -8990989454564422459
+      turquesa_izquierda: 210158189145251922
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
