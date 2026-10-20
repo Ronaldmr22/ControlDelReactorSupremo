@@ -10,6 +10,8 @@ public class SalaUI : MonoBehaviour
     [SerializeField] private GameObject pantallaUnirse;
     [SerializeField] private GameObject pantallaSala;
 
+    [SerializeField] private GameObject pantallaConfiguracion;
+
     [SerializeField] private TMP_InputField inputCodigo;
     [SerializeField] private TMP_Text mensajeLobby;
     [SerializeField] private TMP_Text mensajeUnirse;
@@ -24,6 +26,11 @@ public class SalaUI : MonoBehaviour
 
     private bool ocupado;
     private Coroutine actualizacionSala;
+
+    private void Awake()
+    {
+        Application.runInBackground = true;
+    }
 
     public void CrearSala()
     {
@@ -124,38 +131,103 @@ public class SalaUI : MonoBehaviour
         botonCrear.interactable = !valor;
         botonUnirse.interactable = !valor;
     }
+
+    public void SalirSala()
+    {
+        if (ocupado)
+            return;
+
+        CambiarOcupado(true);
+        textoEstadoSala.text = "Saliendo de la sala...";
+
+        if (actualizacionSala != null)
+        {
+            StopCoroutine(actualizacionSala);
+            actualizacionSala = null;
+        }
+
+        StartCoroutine(cliente.SalirSala(
+            () => VolverAlLobby(""),
+            error =>
+            {
+                CambiarOcupado(false);
+                textoEstadoSala.text = error;
+
+                actualizacionSala =
+                    StartCoroutine(ActualizarSalaPeriodicamente());
+            }));
+    }
+
+    private void VolverAlLobby(string mensaje)
+    {
+        cliente.LimpiarSala();
+
+        if (actualizacionSala != null)
+        {
+            StopCoroutine(actualizacionSala);
+            actualizacionSala = null;
+        }
+
+        pantallaLobby.SetActive(true);
+        pantallaSala.SetActive(false);
+        pantallaUnirse.SetActive(false);
+        pantallaConfiguracion.SetActive(false);
+
+        mensajeLobby.text = mensaje;
+        CambiarOcupado(false);
+    }
+
     private IEnumerator ActualizarSalaPeriodicamente()
     {
-        string ultimoContenido = JsonUtility.ToJson(cliente.SalaActual);
+        string ultimoContenido = "";
 
-        while (true)
+        while (cliente.SalaActual != null)
         {
-            yield return new WaitForSecondsRealtime(2f);
+            yield return new WaitForSecondsRealtime(5f);
 
-            // Consulta mientras la pantalla de sala está visible.
-            if (!pantallaSala.activeInHierarchy)
-                continue;
+            if (cliente.SalaActual == null)
+                yield break;
+
+            // Mantiene la presencia incluso mientras editamos la configuración.
+            yield return cliente.RegistrarActividad(
+                () => { },
+                error => textoEstadoSala.text = error);
+
+            if (cliente.SalaActual == null)
+                yield break;
 
             yield return cliente.ConsultarSala(
                 sala =>
                 {
-                    if (!pantallaSala.activeInHierarchy)
+                    if (sala.estado == "CANCELADA")
+                    {
+                        VolverAlLobby("El creador cerró la sala.");
                         return;
+                    }
+
+                    bool sigoEnSala = System.Array.Exists(
+                        sala.participantes,
+                        jugador => jugador.idUsuario == SesionUsuario.IdUsuario);
+
+                    if (sala.estado == "ESPERANDO" && !sigoEnSala)
+                    {
+                        VolverAlLobby(
+                            "Tu conexión expiró. Puedes volver a unirte.");
+                        return;
+                    }
 
                     string contenido = JsonUtility.ToJson(sala);
 
-                    // Evita volver a descargar fotos si nada cambió.
-                    if (contenido == ultimoContenido)
-                        return;
-
-                    MostrarSala(sala);
-                    ultimoContenido = contenido;
+                    if (pantallaSala.activeInHierarchy &&
+                        contenido != ultimoContenido)
+                    {
+                        MostrarSala(sala);
+                        ultimoContenido = contenido;
+                    }
                 },
                 error =>
                 {
-                    if (pantallaSala.activeInHierarchy)
-                        textoEstadoSala.text = error;
-
+                    textoEstadoSala.text = error;
                     ultimoContenido = "";
                 });
         }

@@ -134,4 +134,79 @@ public class ClienteSalas : MonoBehaviour
 
         alCompletar?.Invoke(SalaActual);
     }
+    public IEnumerator RegistrarActividad(
+    Action alCompletar,
+    Action<string> alError)
+    {
+        yield return EnviarAccionSala("/api/salas/actividad", alCompletar, alError);
+    }
+
+    public IEnumerator SalirSala(
+        Action alCompletar,
+        Action<string> alError)
+    {
+        yield return EnviarAccionSala("/api/salas/salir", alCompletar, alError);
+    }
+
+    public void LimpiarSala()
+    {
+        SalaActual = null;
+    }
+
+    private IEnumerator EnviarAccionSala(
+        string ruta,
+        Action alCompletar,
+        Action<string> alError)
+    {
+        if (SalaActual == null || SesionUsuario.IdUsuario <= 0)
+        {
+            alError?.Invoke("No tienes una sesión de sala activa.");
+            yield break;
+        }
+
+        var datos = new SolicitudSala
+        {
+            idUsuario = SesionUsuario.IdUsuario,
+            codigoSala = SalaActual.codigoSala
+        };
+
+        string json = JsonUtility.ToJson(datos);
+
+        using var solicitud = new UnityWebRequest(
+            urlServidor.TrimEnd('/') + ruta, "POST");
+
+        solicitud.uploadHandler = new UploadHandlerRaw(
+            Encoding.UTF8.GetBytes(json));
+        solicitud.downloadHandler = new DownloadHandlerBuffer();
+        solicitud.SetRequestHeader("Content-Type", "application/json");
+        solicitud.timeout = 15;
+
+        yield return solicitud.SendWebRequest();
+
+        if (solicitud.result != UnityWebRequest.Result.Success)
+        {
+            string mensaje = "No se pudo completar la solicitud.";
+
+            try
+            {
+                var respuesta = JsonUtility.FromJson<RespuestaError>(
+                    solicitud.downloadHandler.text);
+
+                if (!string.IsNullOrWhiteSpace(respuesta?.mensaje))
+                    mensaje = respuesta.mensaje;
+            }
+            catch (Exception)
+            {
+                mensaje = "No se pudo interpretar la respuesta del servidor.";
+            }
+
+            if (solicitud.result == UnityWebRequest.Result.ConnectionError)
+                mensaje = "No se pudo conectar con el servidor.";
+
+            alError?.Invoke(mensaje);
+            yield break;
+        }
+
+        alCompletar?.Invoke();
+    }
 }

@@ -98,6 +98,9 @@ namespace ControlReactor.Datos.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdJugadorPartida"));
 
+                    b.Property<bool>("EnSala")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("EsGanador")
                         .HasColumnType("boolean");
 
@@ -109,6 +112,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<int>("Puntaje")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UltimaActividadUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("IdJugadorPartida");
 
