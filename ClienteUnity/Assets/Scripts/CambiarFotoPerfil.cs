@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using SimpleFileBrowser;
 using System.Collections;
 using UnityEngine.Networking;
+using System.Text;
 
 public class SeleccionFotoPerfil : MonoBehaviour
 {
@@ -11,6 +12,12 @@ public class SeleccionFotoPerfil : MonoBehaviour
     [SerializeField] private Sprite[] fotosPredeterminadas;
     [SerializeField] private GameObject pantallaPerfil;
     [SerializeField] private GameObject pantallaFotosPerfil;
+    [System.Serializable]
+    private class FotoPredeterminadaDto
+    {
+        public int idUsuario;
+        public int numeroFoto;
+    }
 
     private Texture2D texturaSubida;
     private Sprite spriteSubido;
@@ -18,8 +25,24 @@ public class SeleccionFotoPerfil : MonoBehaviour
 
     public void ElegirFoto(int indice)
     {
+        if (indice < 0 || indice >= fotosPredeterminadas.Length || indice >= 5)
+        {
+            Debug.LogWarning("Foto predeterminada inválida.");
+            return;
+        }
+
+        if (SesionUsuario.IdUsuario <= 0)
+        {
+            Debug.LogWarning("No hay sesión iniciada.");
+            return;
+        }
+
         AplicarFoto(fotosPredeterminadas[indice]);
         LiberarFotoSubida();
+
+        int numeroFoto = indice + 1;
+
+        StartCoroutine(GuardarFotoPredeterminada(numeroFoto));
     }
 
     public void SubirFoto()
@@ -138,5 +161,129 @@ public class SeleccionFotoPerfil : MonoBehaviour
     private void OnDestroy()
     {
         LiberarFotoSubida();
+    }
+
+    public void CargarFotoGuardada(string urlFoto)
+    {
+        if (string.IsNullOrEmpty(urlFoto))
+        {
+            Debug.Log("El usuario no tiene foto guardada.");
+            return;
+        }
+
+        // Foto predeterminada guardada en PostgreSQL.
+        if (urlFoto.StartsWith("predeterminada:"))
+        {
+            string numero = urlFoto.Substring("predeterminada:".Length);
+
+            if (int.TryParse(numero, out int idFoto))
+            {
+                int indice = idFoto - 1;
+
+                if (indice >= 0 &&
+                    indice < fotosPredeterminadas.Length &&
+                    indice < 5)
+                {
+                    LiberarFotoSubida();
+
+                    fotoLobby.sprite = fotosPredeterminadas[indice];
+                    fotoPerfil.sprite = fotosPredeterminadas[indice];
+
+                    fotoLobby.preserveAspect = true;
+                    fotoPerfil.preserveAspect = true;
+
+                    Debug.Log("Foto predeterminada cargada: " + idFoto);
+                    return;
+                }
+            }
+
+            Debug.LogWarning("Foto predeterminada inválida: " + urlFoto);
+            return;
+        }
+
+        // Foto personalizada subida desde la computadora.
+        if (System.Uri.TryCreate(urlFoto, System.UriKind.Absolute, out var uri)
+            && uri.Scheme == System.Uri.UriSchemeHttps
+            && uri.Host == "control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net"
+            && uri.AbsolutePath.StartsWith("/api/fotos-perfil/"))
+        {
+            StartCoroutine(DescargarFoto(urlFoto));
+        }
+        else
+        {
+            Debug.LogWarning("URL de foto no permitida.");
+        }
+    }
+
+    private IEnumerator DescargarFoto(string url)
+    {
+        using (UnityWebRequest request = UnityWebRequestTexture.GetTexture(url))
+        {
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("Error al descargar foto: " + request.error);
+                yield break;
+            }
+
+            Texture2D nuevaTextura =
+                DownloadHandlerTexture.GetContent(request);
+
+            LiberarFotoSubida();
+
+            texturaSubida = nuevaTextura;
+
+            spriteSubido = Sprite.Create(
+                texturaSubida,
+                new Rect(0, 0, texturaSubida.width, texturaSubida.height),
+                new Vector2(0.5f, 0.5f)
+            );
+
+            fotoLobby.sprite = spriteSubido;
+            fotoPerfil.sprite = spriteSubido;
+
+            fotoLobby.preserveAspect = true;
+            fotoPerfil.preserveAspect = true;
+
+            Debug.Log("Foto de perfil cargada desde Azure.");
+        }
+    }
+    private IEnumerator GuardarFotoPredeterminada(int numeroFoto)
+    {
+        FotoPredeterminadaDto datos = new FotoPredeterminadaDto
+        {
+            idUsuario = SesionUsuario.IdUsuario,
+            numeroFoto = numeroFoto
+        };
+
+        string json = JsonUtility.ToJson(datos);
+
+        string url =
+            API_URL + "/predeterminada";
+
+        using (UnityWebRequest request = new UnityWebRequest(url, "PUT"))
+        {
+            request.uploadHandler = new UploadHandlerRaw(
+                Encoding.UTF8.GetBytes(json));
+
+            request.downloadHandler = new DownloadHandlerBuffer();
+
+            request.SetRequestHeader("Content-Type", "application/json");
+
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("Foto predeterminada " + numeroFoto +
+                          " guardada correctamente en Azure.");
+            }
+            else
+            {
+                Debug.LogError("Error al guardar foto predeterminada: " +
+                               request.responseCode + " - " +
+                               request.downloadHandler.text);
+            }
+        }
     }
 }

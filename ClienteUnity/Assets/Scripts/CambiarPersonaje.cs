@@ -83,4 +83,20 @@ public class SeleccionPersonaje : MonoBehaviour
             }
         }
     }
+
+    public void MostrarAvatarGuardado(int idAvatar)
+    {
+        int indice = idAvatar - 1;
+
+        if (indice < 0 || indice >= personajes.Length)
+        {
+            Debug.LogWarning("Avatar guardado inválido: " + idAvatar);
+            return;
+        }
+
+        imagenPersonajeLobby.sprite = personajes[indice];
+        imagenPersonajeLobby.preserveAspect = true;
+
+        Debug.Log("Avatar cargado desde Azure: " + idAvatar);
+    }
 }
