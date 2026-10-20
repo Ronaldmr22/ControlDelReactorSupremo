@@ -209,4 +209,14 @@ public class ClienteSalas : MonoBehaviour
 
         alCompletar?.Invoke();
     }
+
+    public IEnumerator IniciarPartida(
+    Action alCompletar,
+    Action<string> alError)
+    {
+        yield return EnviarAccionSala(
+            "/api/salas/iniciar",
+            alCompletar,
+            alError);
+    }
 }

@@ -185,7 +185,6 @@ public sealed class WebSocketHandler
             RoomCode = connection.RoomCode,
             PlayerId = connection.PlayerId,
             PlayerName = connection.PlayerName,
-            Players = players
         });
 
         // Informar a los jugadores que ya estaban conectados.

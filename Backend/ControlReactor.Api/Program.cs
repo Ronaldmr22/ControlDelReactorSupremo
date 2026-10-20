@@ -788,4 +788,25 @@ app.MapPost("/api/salas/salir", async (
     return Results.Ok(new { mensaje = resultado.Mensaje });
 });
 
+// Inicia la partida cuando lo solicita el creador de la sala.
+app.MapPost("/api/salas/iniciar", async (
+    UnirseSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.IniciarPartidaAsync(
+        datos.IdUsuario,
+        datos.CodigoSala);
+
+    if (!resultado.Exito)
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
+
 app.Run();

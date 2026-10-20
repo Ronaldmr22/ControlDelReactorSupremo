@@ -266,6 +266,59 @@ namespace ControlReactor.Datos.Repositorios
             return (true, "Saliste de la sala.");
         }
 
+        public async Task<(bool Exito, string Mensaje)> IniciarPartidaAsync(
+        int idUsuario, string codigoSala)
+        {
+            await using var transaccion =
+                await _context.Database.BeginTransactionAsync();
+
+            var partida = await BuscarSalaBloqueadaAsync(codigoSala);
+
+            if (partida == null)
+                return (false, "La sala no existe.");
+
+            // Solo el creador puede iniciar la partida.
+            if (partida.IdUsuarioCreador != idUsuario)
+                return (false, "Solo el creador puede iniciar la partida.");
+
+            if (partida.Estado != "ESPERANDO")
+                return (false, "La partida ya no está en espera.");
+
+            var ahora = DateTime.UtcNow;
+            var limite = ahora.AddSeconds(-60);
+
+            // Contamos únicamente los participantes activos.
+            var participantesActivos = await _context.JugadoresPartida
+                .CountAsync(j =>
+                    j.IdPartida == partida.IdPartida &&
+                    j.EnSala &&
+                    j.UltimaActividadUtc.HasValue &&
+                    j.UltimaActividadUtc.Value >= limite);
+
+            if (participantesActivos < 2)
+                return (false, "Se necesitan al menos 2 jugadores para iniciar.");
+
+            // Verificamos que el creador siga activo.
+            var creadorActivo = await _context.JugadoresPartida
+                .AnyAsync(j =>
+                    j.IdPartida == partida.IdPartida &&
+                    j.IdUsuario == idUsuario &&
+                    j.EnSala &&
+                    j.UltimaActividadUtc.HasValue &&
+                    j.UltimaActividadUtc.Value >= limite);
+
+            if (!creadorActivo)
+                return (false, "Tu conexión con la sala expiró.");
+
+            // Cambiamos el estado de la partida.
+            partida.Estado = "INICIADA";
+
+            await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
+
+            return (true, "Partida iniciada correctamente.");
+        }
+
         private async Task<Partida?> BuscarSalaBloqueadaAsync(string codigoSala)
         {
             string codigo = (codigoSala ?? string.Empty)
