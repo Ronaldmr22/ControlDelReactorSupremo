@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -14,28 +15,43 @@ public class MovimientoJugador : MonoBehaviour
     private Rigidbody2D cuerpo;
     private SpriteRenderer imagen;
     private Vector2 movimiento;
+    private MensajeSobreAvatar mensaje;
 
     private void Awake()
     {
         cuerpo = GetComponent<Rigidbody2D>();
         imagen = GetComponent<SpriteRenderer>();
+        mensaje = GetComponent<MensajeSobreAvatar>();
     }
 
     private void Update()
     {
-        // Lee únicamente la cruceta del control.
-        movimiento = Gamepad.current != null
-            ? Gamepad.current.dpad.ReadValue()
+        Gamepad control = Gamepad.current;
+
+        // Movimiento con la cruceta.
+        movimiento = control != null
+            ? control.dpad.ReadValue()
             : Vector2.zero;
 
         movimiento = Vector2.ClampMagnitude(movimiento, 1f);
 
+        // Acción con el botón X del control Xbox.
+        if (control != null && control.buttonSouth.wasPressedThisFrame)
+        {
+            Debug.Log("Acción ejecutada");
+
+            if (mensaje != null)
+                mensaje.Mostrar("Acción");
+            else
+                Debug.LogWarning("Falta MensajeSobreAvatar en el personaje.");
+        }
+
+        // Cambiar el sprite según la dirección.
         if (movimiento == Vector2.zero)
             return;
 
         Sprite siguiente;
 
-        // Muestra la dirección principal del movimiento.
         if (Mathf.Abs(movimiento.x) > Mathf.Abs(movimiento.y))
             siguiente = movimiento.x > 0 ? derecha : izquierda;
         else
@@ -58,3 +74,4 @@ public class MovimientoJugador : MonoBehaviour
             cuerpo.linearVelocity = Vector2.zero;
     }
 }
+
