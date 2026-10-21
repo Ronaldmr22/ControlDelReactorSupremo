@@ -181,6 +181,8 @@ public class ClienteSalas : MonoBehaviour
         solicitud.SetRequestHeader("Content-Type", "application/json");
         solicitud.timeout = 15;
 
+        Debug.Log("URL SOLICITADA: " + solicitud.url);
+        Debug.Log("MÉTODO HTTP: " + solicitud.method);
         yield return solicitud.SendWebRequest();
 
 

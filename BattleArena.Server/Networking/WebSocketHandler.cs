@@ -179,6 +179,15 @@ public sealed class WebSocketHandler
             return;
         }
 
+        Console.WriteLine(
+        $"[WEBSOCKET] Jugador conectado: {connection.PlayerName}");
+
+        Console.WriteLine(
+        $"[WEBSOCKET] Sala: {connection.RoomCode}");
+
+        Console.WriteLine(
+        $"[WEBSOCKET] Jugadores conectados anteriormente: {existingConnections.Count}");
+
         await connection.SendAsync(new ServerMessage
         {
             Type = "room_subscribed",
@@ -186,6 +195,20 @@ public sealed class WebSocketHandler
             PlayerId = connection.PlayerId,
             PlayerName = connection.PlayerName,
         });
+
+        // Informar al jugador nuevo quiénes ya estaban en la sala.
+        foreach (var existing in existingConnections)
+        {
+            await connection.SendAsync(new ServerMessage
+            {
+                Type = "player_joined",
+                RoomCode = connection.RoomCode,
+                PlayerId = existing.PlayerId,
+                PlayerName = existing.PlayerName,
+                X = existing.X,
+                Y = existing.Y
+            });
+        }
 
         // Informar a los jugadores que ya estaban conectados.
         foreach (var existing in existingConnections)
