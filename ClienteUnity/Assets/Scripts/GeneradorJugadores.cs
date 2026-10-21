@@ -78,8 +78,12 @@ public class GeneradorJugadores : MonoBehaviour
             FindAnyObjectByType<CamaraSeguimiento>();
 
         if (camara != null)
+        {
             camara.AsignarJugador(jugador.transform);
-
-        Debug.Log("Jugador local creado: " + jugador.name);
+        }
+        else
+        {
+            Debug.LogWarning("No se encontró CamaraSeguimiento en la escena.");
+        }
     }
 }
