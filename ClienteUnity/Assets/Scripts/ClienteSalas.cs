@@ -194,6 +194,13 @@ public class ClienteSalas : MonoBehaviour
 
         yield return solicitud.SendWebRequest();
 
+
+        Debug.Log(
+        "HTTP: " + solicitud.responseCode +
+        " | Error: " + solicitud.error +
+        " | Respuesta: " + solicitud.downloadHandler.text
+         );
+
         if (solicitud.result != UnityWebRequest.Result.Success)
         {
             string mensaje = "No se pudo completar la solicitud.";
@@ -298,5 +305,14 @@ public class ClienteSalas : MonoBehaviour
         }
 
         alCompletar?.Invoke();
+        }
+    public IEnumerator IniciarPartida(
+    Action alCompletar,
+    Action<string> alError)
+    {
+        yield return EnviarAccionSala(
+            "/api/salas/iniciar",
+            alCompletar,
+            alError);
     }
 }

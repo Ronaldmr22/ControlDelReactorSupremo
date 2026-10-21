@@ -15,6 +15,8 @@ namespace ControlReactor.Negocio.Interfaces
             int idUsuario, string codigoSala);
         Task<(bool Exito, string Mensaje)> SalirAsync(
             int idUsuario, string codigoSala);
+        Task<(bool Exito, string Mensaje)> IniciarPartidaAsync(
+        int idUsuario, string codigoSala);
     }
 }
 
