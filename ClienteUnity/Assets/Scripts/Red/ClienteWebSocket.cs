@@ -48,6 +48,25 @@ public class ClienteWebSocket : MonoBehaviour
         {
             Debug.Log("WebSocket conectado.");
             ConexionAbierta?.Invoke();
+
+            if (string.IsNullOrWhiteSpace(ContextoPartida.CodigoSala))
+            {
+                Debug.LogError("No hay código de sala para el WebSocket.");
+                return;
+            }
+
+            string codigoSala = ContextoPartida.CodigoSala;
+            string nombreJugador = SesionUsuario.NombreUsuario;
+
+            string mensaje = JsonUtility.ToJson(new SuscripcionSala
+            {
+                type = "subscribe_room",
+                roomCode = codigoSala,
+                playerName = nombreJugador
+            });
+
+            EnviarMensaje(mensaje);
+            Debug.Log("Suscripción enviada a la sala: " + codigoSala);
         };
 
         websocket.OnMessage += (bytes) =>
@@ -138,4 +157,13 @@ public class ClienteWebSocket : MonoBehaviour
             websocket = null;
         }
     }
+
+    [Serializable]
+    private class SuscripcionSala
+    {
+        public string type;
+        public string roomCode;
+        public string playerName;
+    }
+
 }
