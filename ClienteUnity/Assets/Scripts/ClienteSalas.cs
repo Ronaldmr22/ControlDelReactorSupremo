@@ -18,6 +18,17 @@ public class ClienteSalas : MonoBehaviour
     }
 
     [Serializable]
+    private class SolicitudConfiguracion
+    {
+        public int idUsuario;
+        public string tipoFinalizacion;
+        public int limiteTiempo;
+        public int puntajeObjetivo;
+        public int segundosCongelamiento;
+    }
+
+
+    [Serializable]
     private class RespuestaError
     {
         public string mensaje;
@@ -219,6 +230,84 @@ public class ClienteSalas : MonoBehaviour
         alCompletar?.Invoke();
     }
 
+    public IEnumerator GuardarConfiguracion(
+        string tipoFinalizacion,
+        int minutos,
+        int puntos,
+        int segundosCongelamiento,
+        Action alCompletar,
+        Action<string> alError)
+    {
+        if (SalaActual == null)
+        {
+            alError?.Invoke("No tienes una sala activa.");
+            yield break;
+        }
+
+        if (SesionUsuario.IdUsuario != SalaActual.idUsuarioCreador)
+        {
+            alError?.Invoke("Solo el anfitrión puede configurar la partida.");
+            yield break;
+        }
+
+        string modo = tipoFinalizacion.Trim().ToUpperInvariant();
+
+        if (modo != "TIEMPO" && modo != "PUNTOS")
+        {
+            alError?.Invoke("Modo de finalización inválido.");
+            yield break;
+        }
+
+        var datos = new SolicitudConfiguracion
+        {
+            idUsuario = SesionUsuario.IdUsuario,
+            tipoFinalizacion = modo,
+            limiteTiempo = modo == "TIEMPO" ? minutos : 0,
+            puntajeObjetivo = modo == "PUNTOS" ? puntos : 0,
+            segundosCongelamiento = segundosCongelamiento
+        };
+
+        string json = JsonUtility.ToJson(datos);
+
+        string url = urlServidor.TrimEnd('/')
+            + "/api/partidas/"
+            + SalaActual.idPartida
+            + "/configuracion";
+
+        using var solicitud = new UnityWebRequest(url, "PUT");
+
+        solicitud.uploadHandler = new UploadHandlerRaw(
+            Encoding.UTF8.GetBytes(json));
+
+        solicitud.downloadHandler = new DownloadHandlerBuffer();
+        solicitud.SetRequestHeader("Content-Type", "application/json");
+        solicitud.timeout = 20;
+
+        yield return solicitud.SendWebRequest();
+
+        if (solicitud.result != UnityWebRequest.Result.Success)
+        {
+            string mensaje = "No se pudo guardar la configuración.";
+
+            try
+            {
+                var respuesta = JsonUtility.FromJson<RespuestaError>(
+                    solicitud.downloadHandler.text);
+
+                if (!string.IsNullOrWhiteSpace(respuesta?.mensaje))
+                    mensaje = respuesta.mensaje;
+            }
+            catch (Exception)
+            {
+                // Conservamos el mensaje general.
+            }
+
+            alError?.Invoke(mensaje);
+            yield break;
+        }
+
+        alCompletar?.Invoke();
+        }
     public IEnumerator IniciarPartida(
     Action alCompletar,
     Action<string> alError)
