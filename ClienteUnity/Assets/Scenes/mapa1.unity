@@ -317,7 +317,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 417bd32cf99e39540a4afab0490c7ca4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClienteWebSocket
-  urlServidor: ws://127.0.0.1:5000/ws
+  urlServidor: wss://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net/ws
 --- !u!4 &464542370
 Transform:
   m_ObjectHideFlags: 0
