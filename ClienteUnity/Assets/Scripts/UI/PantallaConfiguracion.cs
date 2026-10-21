@@ -1,70 +1,117 @@
+
 using System;
-using UnityEngine;
+using System.Collections;
 using TMPro;
-using BattleArena.Core;
+using UnityEngine;
 
 public class PantallaConfiguracion : MonoBehaviour
 {
-    // Elementos de la pantalla. Si se usan otros se deben agregar.
+    [Header("Opciones de configuración")]
     [SerializeField] private TMP_Dropdown dropdownModo;
-    [SerializeField] private TMP_InputField campoMinutos;
-    [SerializeField] private TMP_InputField campoPuntos;
-    [SerializeField] private TMP_InputField campoCongelamiento;
-    [SerializeField] private TextMeshProUGUI textoMensaje;
+    [SerializeField] private TMP_Dropdown dropdownDuracion;
+    [SerializeField] private TMP_Dropdown dropdownPuntos;
+    [SerializeField] private TMP_Dropdown dropdownCongelamiento;
 
-    private ConfiguracionPartida configuracion;
+    [Header("Otros componentes")]
+    [SerializeField] private TMP_Text textoMensaje;
+    [SerializeField] private ClienteSalas clienteSalas;
 
-    // Awake corre al cargarse el objeto
-    private void Awake()
+    private bool guardando;
+
+    private void OnEnable()
     {
-        // Por ahora se crea con valores por defecto.
-        // Después se recuperará la última configuración guardada.
-        configuracion = new ConfiguracionPartida();
+        if (textoMensaje != null)
+            textoMensaje.text = "";
     }
 
-    // Start corre justo antes del primer frame
-    private void Start()
-    {
-        MostrarValores();
-        textoMensaje.text = "";
-    }
-
-    // La llama el botón Guardar.
     public void Guardar()
     {
-        int minutos;
-        int puntos;
-        int congelamiento;
+        if (guardando)
+            return;
 
-        bool minutosValidos = int.TryParse(campoMinutos.text, out minutos);
-        bool puntosValidos = int.TryParse(campoPuntos.text, out puntos);
-        bool congelamientoValido = int.TryParse(campoCongelamiento.text, out congelamiento);
-
-        if (!minutosValidos || !puntosValidos || !congelamientoValido)
+        if (dropdownModo == null ||
+            dropdownDuracion == null ||
+            dropdownPuntos == null ||
+            dropdownCongelamiento == null ||
+            textoMensaje == null ||
+            clienteSalas == null)
         {
-            textoMensaje.text = "Completa todos los campos con números enteros.";
+            Debug.LogError("Faltan referencias de configuración.");
             return;
         }
 
-        // Se hace un cast del valor del dropdown al enum ModoFinalizacion.
-        ModoFinalizacion modo = (ModoFinalizacion)dropdownModo.value;
+        // Opción 0 = tiempo, opción 1 = puntos.
+        string modo = dropdownModo.value == 0
+            ? "TIEMPO"
+            : "PUNTOS";
 
-        try
+        // Obtener los números de las opciones seleccionadas.
+        if (!LeerNumero(dropdownDuracion, out int minutos) ||
+            !LeerNumero(dropdownPuntos, out int puntos) ||
+            !LeerNumero(dropdownCongelamiento, out int congelamiento))
         {
-            configuracion.Configurar(modo, minutos, puntos, congelamiento);
-            textoMensaje.text = "Configuración guardada.";
+            textoMensaje.text = "Hay opciones de configuración inválidas.";
+            return;
         }
-        catch (ArgumentException error)
+
+        if ((modo == "TIEMPO" && minutos <= 0) ||
+            (modo == "PUNTOS" && puntos <= 0) ||
+            congelamiento <= 0)
         {
-            textoMensaje.text = error.Message;
+            textoMensaje.text = "Los valores deben ser mayores que cero.";
+            return;
         }
+
+        StartCoroutine(EnviarConfiguracion(
+            modo, minutos, puntos, congelamiento));
     }
 
-    private void MostrarValores()
+    private IEnumerator EnviarConfiguracion(
+        string modo,
+        int minutos,
+        int puntos,
+        int congelamiento)
     {
-        dropdownModo.value = (int)configuracion.Modo;
-        campoMinutos.text = configuracion.Minutos.ToString();
-        campoPuntos.text = configuracion.PuntosObjetivo.ToString();
-        campoCongelamiento.text = configuracion.SegundosCongelamiento.ToString();
+        guardando = true;
+        textoMensaje.text = "Guardando configuración...";
+
+        yield return clienteSalas.GuardarConfiguracion(
+            modo,
+            minutos,
+            puntos,
+            congelamiento,
+            () =>
+            {
+                textoMensaje.text =
+                    "Configuración guardada correctamente.";
+            },
+            error =>
+            {
+                textoMensaje.text = error;
+                Debug.LogError(
+                    "Error al guardar configuración: " + error);
+            });
+
+        guardando = false;
+    }
+
+    private bool LeerNumero(TMP_Dropdown dropdown, out int numero)
+    {
+        numero = 0;
+
+        if (dropdown.options == null ||
+            dropdown.value < 0 ||
+            dropdown.value >= dropdown.options.Count)
+        {
+            return false;
+        }
+
+        // Ejemplos: "5 minutos", "100 puntos", "4 segundos".
+        string texto = dropdown.options[dropdown.value].text;
+
+        string[] partes = texto.Trim().Split(' ');
+
+        return partes.Length > 0 &&
+               int.TryParse(partes[0], out numero);
     }
 }
