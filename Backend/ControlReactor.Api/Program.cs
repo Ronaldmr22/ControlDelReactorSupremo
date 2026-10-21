@@ -6,7 +6,7 @@ using ControlReactor.Datos.Repositorios;
 using ControlReactor.Modelos.DTOs;
 using ControlReactor.Api.Servicios;
 using ControlReactor.Modelos.Entidades;
-
+using ControlReactor.Api.Multijugador.Networking;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,7 +49,12 @@ builder.Services.AddDbContext<ControlReactorDbContext>(options =>options.UseNpgs
 // Servicios del backend
 builder.Services.AddOpenApi();
 
+builder.Services.AddSingleton<ConnectionGroupManager>();
+builder.Services.AddSingleton<WebSocketHandler>();
+
 var app = builder.Build();
+
+app.UseWebSockets();
 
 // OpenAPI disponible durante desarrollo
 if (app.Environment.IsDevelopment())
@@ -948,6 +953,14 @@ app.MapPost("/api/salas/iniciar", async (
     {
         mensaje = resultado.Mensaje
     });
+});
+
+app.Map("/ws", async context =>
+{
+    var handler = context.RequestServices
+        .GetRequiredService<WebSocketHandler>();
+
+    await handler.HandleAsync(context);
 });
 
 app.Run();

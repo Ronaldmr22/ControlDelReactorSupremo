@@ -73,7 +73,11 @@ public class ClienteWebSocket : MonoBehaviour
         {
             string mensaje = System.Text.Encoding.UTF8.GetString(bytes);
 
-            Debug.Log("Mensaje recibido: " + mensaje);
+            if (!mensaje.Contains("\"type\":\"player_moved\""))
+            {
+                Debug.Log("Mensaje recibido: " + mensaje);
+            }
+
             MensajeRecibido?.Invoke(mensaje);
         };
 
