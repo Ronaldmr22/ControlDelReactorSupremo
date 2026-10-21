@@ -830,4 +830,103 @@ app.MapPost("/api/salas/salir", async (
     return Results.Ok(new { mensaje = resultado.Mensaje });
 });
 
+
+// Guarda la configuración de una partida desde el lobby.
+app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
+    int idPartida,
+    GuardarConfiguracionPartidaDto datos,
+    ControlReactorDbContext db) =>
+{
+    // Buscar la partida en PostgreSQL.
+    var partida = await db.Partidas.FindAsync(idPartida);
+
+    if (partida == null)
+    {
+        return Results.NotFound(new
+        {
+            mensaje = "La partida no existe."
+        });
+    }
+
+    // Solo el creador de la sala puede cambiar la configuración.
+    if (partida.IdUsuarioCreador != datos.IdUsuario)
+    {
+        return Results.Json(new
+        {
+            mensaje = "Solo el anfitrión puede modificar la configuración."
+        }, statusCode: 403);
+    }
+
+    // No permitir cambios después de iniciar la partida.
+    if (partida.Estado != "ESPERANDO")
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = "La partida ya no está esperando jugadores."
+        });
+    }
+
+    string modo = datos.TipoFinalizacion.Trim().ToUpperInvariant();
+
+    if (modo != "TIEMPO" && modo != "PUNTOS")
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = "El modo de finalización no es válido."
+        });
+    }
+
+    if (datos.SegundosCongelamiento <= 0)
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = "El tiempo de parálisis debe ser mayor que cero."
+        });
+    }
+
+    if (modo == "TIEMPO" &&
+        (datos.LimiteTiempo == null || datos.LimiteTiempo <= 0))
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = "La duración debe ser mayor que cero."
+        });
+    }
+
+    if (modo == "PUNTOS" &&
+        (datos.PuntajeObjetivo == null || datos.PuntajeObjetivo <= 0))
+    {
+        return Results.BadRequest(new
+        {
+            mensaje = "El puntaje objetivo debe ser mayor que cero."
+        });
+    }
+
+    // Actualizar los parámetros de la partida.
+    partida.TipoFinalizacion = modo;
+    partida.LimiteTiempo = modo == "TIEMPO"
+        ? datos.LimiteTiempo
+        : null;
+
+    partida.PuntajeObjetivo = modo == "PUNTOS"
+        ? datos.PuntajeObjetivo
+        : null;
+
+    partida.SegundosCongelamiento = datos.SegundosCongelamiento;
+
+    // Guardar los cambios en PostgreSQL.
+    await db.SaveChangesAsync();
+
+    return Results.Ok(new
+    {
+        mensaje = "Configuración guardada correctamente.",
+        idPartida = partida.IdPartida,
+        tipoFinalizacion = partida.TipoFinalizacion,
+        limiteTiempo = partida.LimiteTiempo,
+        puntajeObjetivo = partida.PuntajeObjetivo,
+        segundosCongelamiento = partida.SegundosCongelamiento
+    });
+});
+
+
 app.Run();
