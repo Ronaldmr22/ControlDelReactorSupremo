@@ -125,12 +125,6 @@ namespace ControlReactor.Datos.Repositorios
             if (usuario.AvatarSeleccionado is not (>= 1 and <= 5))
                 return (null, "Selecciona un personaje antes de unirte.");
 
-            if (activos.Any(j =>
-                j.Usuario.AvatarSeleccionado == usuario.AvatarSeleccionado))
-            {
-                return (null,
-                    "Ese personaje ya está ocupado. Elige otro en el lobby.");
-            }
 
             // Reutiliza el registro si el usuario había salido.
             if (existente == null)
@@ -311,7 +305,10 @@ namespace ControlReactor.Datos.Repositorios
                 return (false, "Tu conexión con la sala expiró.");
 
             // Cambiamos el estado de la partida.
-            partida.Estado = "INICIADA";
+            partida.Estado = "EN_CURSO";
+
+            // Registramos el momento real en que comenzó.
+            partida.FechaInicio = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             await transaccion.CommitAsync();

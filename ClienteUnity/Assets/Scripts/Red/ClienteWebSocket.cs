@@ -62,7 +62,8 @@ public class ClienteWebSocket : MonoBehaviour
             {
                 type = "subscribe_room",
                 roomCode = codigoSala,
-                playerName = nombreJugador
+                playerName = nombreJugador,
+                idUsuario = SesionUsuario.IdUsuario
             });
 
             EnviarMensaje(mensaje);
@@ -168,6 +169,7 @@ public class ClienteWebSocket : MonoBehaviour
         public string type;
         public string roomCode;
         public string playerName;
+        public int idUsuario;
     }
 
 }

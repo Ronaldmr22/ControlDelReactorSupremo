@@ -17,4 +17,7 @@ public class ServerMessage
     public float X { get; set; }
 
     public float Y { get; set; }
+    public int? IdJugadorPartida { get; set; }
+    public int? IdUsuario { get; set; }
+    public int? Puntaje { get; set; }
 }

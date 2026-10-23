@@ -4,7 +4,7 @@ using ControlReactor.Negocio.Servicios;
 using ControlReactor.Negocio.Interfaces;
 using ControlReactor.Datos.Repositorios;
 using ControlReactor.Modelos.DTOs;
-using ControlReactor.Api.Servicios;
+using ControlReactor.Api.ServicioSegundoPlano;
 using ControlReactor.Modelos.Entidades;
 using ControlReactor.Api.Multijugador.Networking;
 

@@ -46,6 +46,29 @@ public sealed class ConnectionGroupManager
 
             existingConnections = group.Connections.Values.ToList();
 
+            // Comprobar que la conexion tenga un usuario validado.
+            if (!connection.IdUsuario.HasValue ||
+                !connection.IdJugadorPartida.HasValue)
+            {
+                error = "El jugador no esta identificado.";
+                return false;
+            }
+
+            // Evitar que el mismo usuario ocupe dos conexiones.
+            if (group.Connections.Values.Any(player =>
+                player.IdUsuario == connection.IdUsuario))
+            {
+                error = "Este usuario ya esta conectado a la sala.";
+                return false;
+            }
+
+            // Maximo 3 jugadores conectados.
+            if (group.Connections.Count >= 3)
+            {
+                error = "La sala ya tiene 3 jugadores conectados.";
+                return false;
+            }
+
             if (group.Connections.ContainsKey(connection.PlayerId))
             {
                 error = "Esta conexion ya esta registrada en el grupo.";
@@ -78,6 +101,12 @@ public sealed class ConnectionGroupManager
             if (connection.RoomCode is null ||
                 !_groups.TryGetValue(connection.RoomCode, out var group) ||
                 !group.Connections.ContainsKey(connection.PlayerId))
+            {
+                return false;
+            }
+
+            // Comprobar que la posicion realmente cambió.
+            if (connection.X == x && connection.Y == y)
             {
                 return false;
             }
@@ -134,4 +163,25 @@ public sealed class ConnectionGroupManager
             return true;
         }
     }
+    
+    public List<ClientConnection> ObtenerConexionesSala(string roomCode)
+    {
+        lock (_sync)
+        {
+            if (string.IsNullOrWhiteSpace(roomCode))
+            {
+                return new List<ClientConnection>();
+            }
+
+            string code = roomCode.Trim().ToUpperInvariant();
+
+            if (!_groups.TryGetValue(code, out var group))
+            {
+                return new List<ClientConnection>();
+            }
+
+            return group.Connections.Values.ToList();
+        }
+    }
+
 }

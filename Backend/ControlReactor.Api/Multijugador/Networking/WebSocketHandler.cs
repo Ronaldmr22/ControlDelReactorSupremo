@@ -4,19 +4,27 @@ using System.Text;
 using System.Text.Json;
 using ControlReactor.Api.Multijugador.Players;
 using ControlReactor.Api.Multijugador.Protocol;
+using ControlReactor.Datos.Contexto;
+using Microsoft.EntityFrameworkCore;
+using ControlReactor.Negocio.Servicios;
+
+
 
 namespace ControlReactor.Api.Multijugador.Networking;
+
 
 public sealed class WebSocketHandler
 {
     private readonly ConnectionGroupManager _groupManager;
+    private readonly IServiceScopeFactory _scopeFactory;
 
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
-    public WebSocketHandler(ConnectionGroupManager groupManager)
+    public WebSocketHandler(ConnectionGroupManager groupManager, IServiceScopeFactory scopeFactory)
     {
         _groupManager = groupManager;
+        _scopeFactory = scopeFactory;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -166,6 +174,61 @@ public sealed class WebSocketHandler
             connection.PlayerName = message.PlayerName.Trim();
         }
 
+        
+        if (!message.IdUsuario.HasValue || message.IdUsuario.Value <= 0)
+        {
+            await SendErrorAsync(
+                connection,
+                "Debes indicar un usuario valido.");
+            return;
+        }
+
+        string codigoSala = message.RoomCode.Trim().ToUpperInvariant();
+
+        using var scope = _scopeFactory.CreateScope();
+
+        var db = scope.ServiceProvider
+            .GetRequiredService<ControlReactorDbContext>();
+
+        var partida = await db.Partidas
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.CodigoSala == codigoSala);
+
+        if (partida == null)
+        {
+            await SendErrorAsync(connection, "La sala no existe.");
+            return;
+        }
+
+        if (partida.Estado != "ESPERANDO" &&
+            partida.Estado != "EN_CURSO")
+        {
+            await SendErrorAsync(
+                connection,
+                "La partida no permite conexiones.");
+            return;
+        }
+
+        var participante = await db.JugadoresPartida
+            .AsNoTracking()
+            .FirstOrDefaultAsync(j =>
+                j.IdPartida == partida.IdPartida &&
+                j.IdUsuario == message.IdUsuario.Value &&
+                j.EnSala);
+
+        if (participante == null)
+        {
+            await SendErrorAsync(
+                connection,
+                "El usuario no pertenece a esta sala.");
+            return;
+        }
+
+        // Guardamos la relacion con PostgreSQL.
+        connection.IdUsuario = participante.IdUsuario;
+        connection.IdJugadorPartida = participante.IdJugadorPartida;
+
+
         bool success = _groupManager.Subscribe(
             connection,
             message.RoomCode,
@@ -187,6 +250,21 @@ public sealed class WebSocketHandler
             PlayerName = connection.PlayerName,
         });
 
+        // Informar al jugador nuevo quiénes ya estaban en la sala.
+        foreach (var existing in existingConnections)
+        {
+            await connection.SendAsync(new ServerMessage
+            {
+                Type = "player_joined",
+                RoomCode = connection.RoomCode,
+                PlayerId = existing.PlayerId,
+                PlayerName = existing.PlayerName,
+                IdUsuario = existing.IdUsuario,
+                X = existing.X,
+                Y = existing.Y
+            });
+        }
+
         // Informar a los jugadores que ya estaban conectados.
         foreach (var existing in existingConnections)
         {
@@ -196,6 +274,7 @@ public sealed class WebSocketHandler
                 RoomCode = connection.RoomCode,
                 PlayerId = connection.PlayerId,
                 PlayerName = connection.PlayerName,
+                IdUsuario = connection.IdUsuario,
                 X = connection.X,
                 Y = connection.Y
             });
@@ -224,6 +303,13 @@ public sealed class WebSocketHandler
                 "Las coordenadas no son validas.");
             return;
         }
+        if (!connection.IdJugadorPartida.HasValue)
+        {
+            await SendErrorAsync(
+                connection,
+                "El jugador no tiene una participacion valida.");
+            return;
+        }
 
         bool success = _groupManager.TryUpdatePosition(
             connection,
@@ -234,10 +320,42 @@ public sealed class WebSocketHandler
 
         if (!success || player is null)
         {
+            // Ignorar movimientos repetidos o no aceptados.
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+
+        var servicioPuntuacion = scope.ServiceProvider
+            .GetRequiredService<ServicioPuntuacion>();
+
+        int? nuevoPuntaje = await servicioPuntuacion.RegistrarMovimiento(
+            connection.IdJugadorPartida.Value);
+
+        if (!nuevoPuntaje.HasValue)
+        {
             await SendErrorAsync(
                 connection,
-                "Primero debes suscribirte a una sala.");
+                "No se pudo registrar el movimiento.");
             return;
+        }
+        // Mensaje con el puntaje actualizado.
+        var mensajePuntaje = new ServerMessage
+        {
+            Type = "score_updated",
+            RoomCode = connection.RoomCode,
+            PlayerId = connection.PlayerId,
+            IdJugadorPartida = connection.IdJugadorPartida.Value,
+            Puntaje = nuevoPuntaje.Value
+        };
+
+        // Enviar el puntaje al jugador que se movió.
+        await connection.SendAsync(mensajePuntaje);
+
+        // Enviar el puntaje a los demás jugadores de la sala.
+        foreach (var recipient in recipients)
+        {
+            await recipient.SendAsync(mensajePuntaje);
         }
 
         var movementMessage = new ServerMessage
