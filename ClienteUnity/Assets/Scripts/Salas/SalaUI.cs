@@ -303,6 +303,14 @@ public class SalaUI : MonoBehaviour
         }
 
         ContextoPartida.Guardar(sala);
+
+        Debug.Log("===== JUGADORES DE LA PARTIDA =====");
+        Debug.Log("Jugador 1: " + ContextoPartida.IdJugador1);
+        Debug.Log("Jugador 2: " + ContextoPartida.IdJugador2);
+        Debug.Log("Jugador 3: " + ContextoPartida.IdJugador3);
+        Debug.Log("Mi usuario: " + SesionUsuario.IdUsuario);
+        Debug.Log("==================================");
+
         SceneManager.LoadScene("Mapa1");
     }
 }

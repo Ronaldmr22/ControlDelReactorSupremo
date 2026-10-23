@@ -16,6 +16,10 @@ public sealed class ClientConnection
     public WebSocket Socket { get; }
 
     public string PlayerId { get; }
+    // Identificadores reales obtenidos después de validar al usuario.
+    public int? IdUsuario { get; set; }
+
+    public int? IdJugadorPartida { get; set; }
 
     public string PlayerName { get; set; } = "Jugador";
 
