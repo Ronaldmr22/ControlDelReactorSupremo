@@ -198,8 +198,11 @@ public class SalaUI : MonoBehaviour
             yield return cliente.ConsultarSala(
                 sala =>
                 {
-                    if (sala.estado == "INICIADA")
+                    Debug.Log("ESTADO RECIBIDO DE AZURE: " + sala.estado);
+
+                    if (sala.estado == "EN_CURSO")
                     {
+                        Debug.Log("Partida en curso. Cargando Mapa1...");
                         EntrarPartida(sala);
                         return;
                     }

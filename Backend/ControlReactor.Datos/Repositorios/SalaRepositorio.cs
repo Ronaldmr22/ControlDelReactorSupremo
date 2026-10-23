@@ -183,7 +183,12 @@ namespace ControlReactor.Datos.Repositorios
                 CodigoSala = partida.CodigoSala!,
                 Estado = partida.Estado,
                 IdUsuarioCreador = partida.IdUsuarioCreador ?? 0,
-                Participantes = participantes
+                Participantes = participantes,
+
+                TipoFinalizacion = partida.TipoFinalizacion,
+                LimiteTiempo = partida.LimiteTiempo,
+                PuntajeObjetivo = partida.PuntajeObjetivo,
+                FechaInicio = partida.FechaInicio
             };
         }
 

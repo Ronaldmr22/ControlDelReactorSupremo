@@ -345,6 +345,7 @@ public sealed class WebSocketHandler
             Type = "score_updated",
             RoomCode = connection.RoomCode,
             PlayerId = connection.PlayerId,
+            IdUsuario = connection.IdUsuario,
             IdJugadorPartida = connection.IdJugadorPartida.Value,
             Puntaje = nuevoPuntaje.Value
         };
