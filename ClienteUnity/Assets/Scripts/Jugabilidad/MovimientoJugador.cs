@@ -24,6 +24,23 @@ public class MovimientoJugador : MonoBehaviour
         mensaje = GetComponent<MensajeSobreAvatar>();
     }
 
+    public void ConfigurarSprites(
+    Sprite spriteAbajo,
+    Sprite spriteArriba,
+    Sprite spriteIzquierda,
+    Sprite spriteDerecha)
+    {
+        abajo = spriteAbajo;
+        arriba = spriteArriba;
+        izquierda = spriteIzquierda;
+        derecha = spriteDerecha;
+
+        if (imagen == null)
+            imagen = GetComponent<SpriteRenderer>();
+
+        imagen.sprite = abajo;
+    }
+
     private void Update()
     {
         Gamepad control = Gamepad.current;

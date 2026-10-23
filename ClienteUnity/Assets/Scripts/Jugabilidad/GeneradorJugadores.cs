@@ -3,6 +3,17 @@ using System.Collections.Generic;
 
 public class GeneradorJugadores : MonoBehaviour
 {
+
+    [System.Serializable]
+    private class SpritesPersonaje
+    {
+        public Sprite abajo;
+        public Sprite arriba;
+        public Sprite izquierda;
+        public Sprite derecha;
+    }
+
+    [SerializeField] private SpritesPersonaje[] personajes;
     [SerializeField] private GameObject prefabJugador;
     [SerializeField] private Transform puntoJugador1;
     [SerializeField] private Transform puntoJugador2;
@@ -50,6 +61,7 @@ public class GeneradorJugadores : MonoBehaviour
         jugador.name = soyJugador1 ? "Jugador1_Local" : soyJugador2 ? "Jugador2_Local" : "Jugador3_Local";
 
         JugadorLocal = jugador.transform;
+        AplicarPersonaje(jugador, idLocal);
 
         CamaraSeguimiento camara =
             FindAnyObjectByType<CamaraSeguimiento>();
@@ -92,6 +104,7 @@ public class GeneradorJugadores : MonoBehaviour
         );
 
         jugador.name = "JugadorRemoto_" + idUsuario;
+        AplicarPersonaje(jugador, idUsuario);
 
         MovimientoJugador movimiento = jugador.GetComponent<MovimientoJugador>();
 
@@ -123,5 +136,60 @@ public class GeneradorJugadores : MonoBehaviour
             Destroy(jugador.gameObject);
 
         Debug.Log("Jugador remoto desconectado: " + playerId);
+    }
+    private void AplicarPersonaje(GameObject jugador, int idUsuario)
+    {
+        var participantes = ContextoPartida.Participantes;
+
+        if (participantes == null)
+        {
+            Debug.LogError("No se recibieron los participantes de la partida.");
+            return;
+        }
+
+        var participante = System.Array.Find(
+            participantes,
+            p => p != null && p.idUsuario == idUsuario);
+
+        if (participante == null)
+        {
+            Debug.LogError("No se encontró al usuario: " + idUsuario);
+            return;
+        }
+
+        int indice = participante.avatarSeleccionado - 1;
+
+        if (personajes == null || indice < 0 ||
+            indice >= personajes.Length || personajes[indice] == null)
+        {
+            Debug.LogError("Avatar no configurado: " +
+                participante.avatarSeleccionado);
+            return;
+        }
+
+        var sprites = personajes[indice];
+
+        if (sprites.abajo == null || sprites.arriba == null ||
+            sprites.izquierda == null || sprites.derecha == null)
+        {
+            Debug.LogError("Faltan sprites del avatar: " +
+                participante.avatarSeleccionado);
+            return;
+        }
+
+        var movimiento = jugador.GetComponent<MovimientoJugador>();
+
+        if (movimiento == null)
+        {
+            Debug.LogError("El prefab no tiene MovimientoJugador.");
+            return;
+        }
+
+        // Asigna las cuatro direcciones del avatar recibido del backend.
+        movimiento.ConfigurarSprites(
+            sprites.abajo,
+            sprites.arriba,
+            sprites.izquierda,
+            sprites.derecha);
     }
 }
