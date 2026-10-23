@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-
+using System;
 namespace ControlReactor.Modelos.DTOs
 {
     public class SalaDto
@@ -9,6 +9,14 @@ namespace ControlReactor.Modelos.DTOs
         public string Estado { get; set; } = string.Empty;
         public int IdUsuarioCreador { get; set; }
         public List<ParticipanteSalaDto> Participantes { get; set; } = new();
+
+        public string TipoFinalizacion { get; set; } = string.Empty;
+        public int? LimiteTiempo { get; set; }
+        public int? PuntajeObjetivo { get; set; }
+
+
+        public DateTime FechaInicio { get; set; }
+    
     }
 
     public class ParticipanteSalaDto

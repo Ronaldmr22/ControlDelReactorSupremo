@@ -8,6 +8,12 @@ public class DatosSala
     public string estado;
     public int idUsuarioCreador;
     public ParticipanteSala[] participantes;
+
+    // Configuración de la partida
+    public string tipoFinalizacion;
+    public int limiteTiempo;
+    public int puntajeObjetivo;
+    public string fechaInicio;
 }
 
 [Serializable]
@@ -18,4 +24,3 @@ public class ParticipanteSala
     public int avatarSeleccionado;
     public string fotoPerfil;
 }
-
