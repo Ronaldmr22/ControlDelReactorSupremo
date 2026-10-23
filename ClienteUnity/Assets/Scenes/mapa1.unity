@@ -163,6 +163,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 135af59fe525ba94cbe2ae9a2e0ac4da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GeneradorJugadores
+  personajes:
+  - abajo: {fileID: -7324748117700969141, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    arriba: {fileID: -255600890109966296, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    izquierda: {fileID: 2231689258197647638, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    derecha: {fileID: 3750948783733015787, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+  - abajo: {fileID: 5607145142064379142, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    arriba: {fileID: 3501266487060599594, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    izquierda: {fileID: -9218912161516828445, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    derecha: {fileID: -5594313216953538151, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+  - abajo: {fileID: 5903566917008664820, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    arriba: {fileID: -7805403769090637750, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    izquierda: {fileID: 8631234137239711509, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    derecha: {fileID: -1935656475469571234, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+  - abajo: {fileID: 6447810274553317211, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    arriba: {fileID: -3280331353494534660, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    izquierda: {fileID: -4422175413682148932, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    derecha: {fileID: -4004786510681000746, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+  - abajo: {fileID: -8798729924651503145, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    arriba: {fileID: 828067927342742258, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    izquierda: {fileID: -6165203139768936158, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
+    derecha: {fileID: 3383552425850046417, guid: 4dfb4aefe687cca4e97b3e94ae4e64de, type: 3}
   prefabJugador: {fileID: 511678293799335399, guid: 88cf8e364bcb0164e955cdd8a7ebf7b7, type: 3}
   puntoJugador1: {fileID: 2052556921}
   puntoJugador2: {fileID: 80352499}
