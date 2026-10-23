@@ -3,6 +3,7 @@ using System;
 using System.Threading.Tasks;
 using NativeWebSocket;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class ClienteWebSocket : MonoBehaviour
 {
@@ -11,6 +12,7 @@ public class ClienteWebSocket : MonoBehaviour
 
     private WebSocket websocket;
     private bool cerrando;
+    private bool partidaFinalizada;
 
     public bool EstaConectado =>
         websocket != null &&
@@ -70,17 +72,40 @@ public class ClienteWebSocket : MonoBehaviour
             Debug.Log("Suscripción enviada a la sala: " + codigoSala);
         };
 
+
         websocket.OnMessage += (bytes) =>
         {
             string mensaje = System.Text.Encoding.UTF8.GetString(bytes);
 
             if (!mensaje.Contains("\"type\":\"player_moved\""))
-            {
                 Debug.Log("Mensaje recibido: " + mensaje);
-            }
 
             MensajeRecibido?.Invoke(mensaje);
+
+            // Detecta cuando el servidor finaliza la partida.
+
+            try
+            {
+                var evento = JsonUtility.FromJson<MensajeTipo>(mensaje);
+
+                if (evento != null && evento.type == "game_finished")
+                {
+                    if (partidaFinalizada)
+                        return;
+
+                    partidaFinalizada = true;
+
+                    Debug.Log("Partida finalizada. Abriendo Victoria.");
+                    SceneManager.LoadScene("Victoria");
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Error al procesar mensaje: " + ex.Message);
+            }
+
         };
+
 
         websocket.OnError += (error) =>
         {
@@ -170,6 +195,12 @@ public class ClienteWebSocket : MonoBehaviour
         public string roomCode;
         public string playerName;
         public int idUsuario;
+    }
+
+    [Serializable]
+    private class MensajeTipo
+    {
+        public string type;
     }
 
 }

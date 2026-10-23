@@ -84,6 +84,7 @@ namespace ControlReactor.Api.ServicioSegundoPlano
                                         Type = "game_finished",
                                         RoomCode = partida.CodigoSala,
                                         IdJugadorPartida = ganador?.IdJugadorPartida,
+                                        IdUsuario = ganador?.IdUsuario,
                                         Puntaje = ganador?.Puntaje
                                     };
 

@@ -6,8 +6,7 @@ using UnityEngine.Networking;
 public class ClienteResultadoPartida : MonoBehaviour
 {
     [SerializeField]
-    private string urlServidor =
-        "https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net";
+    private string urlServidor ="https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net";
 
     public IEnumerator ConsultarResultado(
         int idPartida,
