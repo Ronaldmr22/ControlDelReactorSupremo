@@ -16,6 +16,26 @@ public class VictoriaUI : MonoBehaviour
 
     private bool consultando;
 
+    private void Start()
+    {
+        if (ContextoPartida.IdPartida <= 0)
+        {
+            Debug.LogWarning(
+                "No hay una partida activa para consultar el resultado.");
+            return;
+        }
+
+        if (cliente == null || txtTitulo == null ||
+            txtNombreGanador == null || txtPuntos == null ||
+            imagenGanador == null)
+        {
+            Debug.LogError("Faltan referencias en VictoriaUI.", this);
+            return;
+        }
+
+        StartCoroutine(CargarResultado(ContextoPartida.IdPartida));
+    }
+
     // Permite probar desde el menú del componente durante Play.
     [ContextMenu("Consultar resultado de prueba")]
     public void ConsultarResultadoPrueba()
@@ -49,27 +69,33 @@ public class VictoriaUI : MonoBehaviour
 
         consultando = false;
     }
-
     private void MostrarResultado(DatosResultadoPartida resultado)
     {
         var ganador = resultado.ganador;
-        int indice = ganador.avatarSeleccionado - 1;
-
-        if (personajes == null || indice < 0 ||
-            indice >= personajes.Length || personajes[indice] == null)
-        {
-            MostrarError("No está configurado el personaje del ganador.");
-            return;
-        }
 
         txtTitulo.text = "¡Felicidades al ganador!";
         txtNombreGanador.text = ganador.nombreUsuario;
         txtPuntos.text = $"{ganador.puntaje} puntos";
 
-        imagenGanador.sprite = personajes[indice];
-        imagenGanador.preserveAspect = true;
-        imagenGanador.enabled = true;
+        // Busca el personaje del ganador.
+        int indice = ganador.avatarSeleccionado - 1;
+
+        if (personajes != null &&
+            indice >= 0 &&
+            indice < personajes.Length &&
+            personajes[indice] != null)
+        {
+            imagenGanador.sprite = personajes[indice];
+            imagenGanador.preserveAspect = true;
+            imagenGanador.enabled = true;
+        }
+        else
+        {
+            imagenGanador.enabled = false;
+            Debug.LogWarning("No se encontró el avatar del ganador.");
+        }
     }
+
 
     private void MostrarError(string mensaje)
     {

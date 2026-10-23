@@ -963,4 +963,46 @@ app.Map("/ws", async context =>
     await handler.HandleAsync(context);
 });
 
+
+ // Obtiene el resultado definitivo para la pantalla de victoria.
+app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
+    int idPartida,
+    IPartidaRepositorio partidaRepositorio,
+    IJugadorPartidaRepositorio jugadorRepositorio,
+    IUsuarioRepositorio usuarioRepositorio) =>
+{
+    var partida = await partidaRepositorio.ObtenerPorIdAsync(idPartida);
+
+    if (partida == null)
+        return Results.NotFound(new { mensaje = "La partida no existe." });
+
+    if (partida.Estado != "FINALIZADA")
+        return Results.Conflict(new { mensaje = "La partida no ha finalizado." });
+
+    var jugadores = await jugadorRepositorio.ObtenerPorPartidaAsync(idPartida);
+    var ganador = jugadores.FirstOrDefault(j => j.EsGanador);
+
+    if (ganador == null)
+        return Results.NotFound(new { mensaje = "No hay ganador registrado." });
+
+    var usuario = await usuarioRepositorio.ObtenerPorIdAsync(ganador.IdUsuario);
+
+    if (usuario == null)
+        return Results.NotFound(new { mensaje = "No se encontró al usuario ganador." });
+
+    return Results.Ok(new
+    {
+        idPartida = partida.IdPartida,
+        estado = partida.Estado,
+        ganador = new
+        {
+            idUsuario = usuario.IdUsuario,
+            nombreUsuario = usuario.NombreUsuario,
+            avatarSeleccionado = usuario.AvatarSeleccionado ?? 0,
+            puntaje = ganador.Puntaje
+        }
+    });
+});
+
+
 app.Run();
