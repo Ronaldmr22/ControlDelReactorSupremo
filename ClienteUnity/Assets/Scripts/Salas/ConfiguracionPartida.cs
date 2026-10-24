@@ -1,3 +1,4 @@
+
 using UnityEngine;
 using TMPro;
 
@@ -6,19 +7,20 @@ public class ConfiguracionPartidaUI : MonoBehaviour
     [SerializeField] private TMP_Dropdown formaFinalizar;
     [SerializeField] private TMP_Dropdown duracion;
     [SerializeField] private TMP_Dropdown puntajeObjetivo;
+    [SerializeField] private TMP_Dropdown tiempoParalisis;
+
     private void OnEnable()
     {
-        if (formaFinalizar == null || duracion == null || puntajeObjetivo == null)
+        if (formaFinalizar == null || duracion == null ||
+            puntajeObjetivo == null || tiempoParalisis == null)
         {
-            Debug.LogError(
-                $"Faltan referencias en {gameObject.name}: " +
-                $"FormaFinalizar={formaFinalizar}, Duracion={duracion}, " +
-                $"PuntajeObjetivo={puntajeObjetivo}", this);
+            Debug.LogError("Faltan referencias de configuración.", this);
             return;
         }
 
-        ActualizarModo(formaFinalizar.value);
+        formaFinalizar.onValueChanged.RemoveListener(ActualizarModo);
         formaFinalizar.onValueChanged.AddListener(ActualizarModo);
+        ActualizarModo(formaFinalizar.value);
     }
 
     private void OnDisable()
@@ -29,10 +31,46 @@ public class ConfiguracionPartidaUI : MonoBehaviour
 
     private void ActualizarModo(int opcion)
     {
-        // Opción 0: por duración. Opción 1: por puntos.
         bool porTiempo = opcion == 0;
 
         duracion.interactable = porTiempo;
         puntajeObjetivo.interactable = !porTiempo;
+    }
+
+    public string ObtenerTipoFinalizacion()
+    {
+        return formaFinalizar.value == 0 ? "TIEMPO" : "PUNTOS";
+    }
+
+    public int ObtenerDuracion()
+    {
+        return LeerNumero(duracion);
+    }
+
+    public int ObtenerPuntaje()
+    {
+        return LeerNumero(puntajeObjetivo);
+    }
+
+    public int ObtenerTiempoParalisis()
+    {
+        return LeerNumero(tiempoParalisis);
+    }
+
+    // Lee el número inicial de opciones como "100 puntos".
+    private int LeerNumero(TMP_Dropdown dropdown)
+    {
+        string texto = dropdown.options[dropdown.value].text;
+        string numero = "";
+
+        foreach (char caracter in texto)
+        {
+            if (char.IsDigit(caracter))
+                numero += caracter;
+            else if (numero.Length > 0)
+                break;
+        }
+
+        return int.TryParse(numero, out int resultado) ? resultado : 0;
     }
 }

@@ -12,6 +12,8 @@ public class SalaUI : MonoBehaviour
     [SerializeField] private GameObject pantallaSala;
 
     [SerializeField] private GameObject pantallaConfiguracion;
+    [SerializeField] private ConfiguracionPartidaUI configuracionPartida;
+    [SerializeField] private Button botonGuardarConfiguracion;
 
     [SerializeField] private TMP_InputField inputCodigo;
     [SerializeField] private TMP_Text mensajeLobby;
@@ -316,4 +318,65 @@ public class SalaUI : MonoBehaviour
 
         SceneManager.LoadScene("Mapa1");
     }
+
+
+    public void GuardarConfiguracion()
+    {
+        if (ocupado || cliente.SalaActual == null)
+            return;
+
+        if (configuracionPartida == null || botonGuardarConfiguracion == null)
+        {
+            Debug.LogError("Faltan referencias para guardar configuración.");
+            return;
+        }
+
+        string modo = configuracionPartida.ObtenerTipoFinalizacion();
+        int minutos = configuracionPartida.ObtenerDuracion();
+        int puntos = configuracionPartida.ObtenerPuntaje();
+        int segundos = configuracionPartida.ObtenerTiempoParalisis();
+
+        Debug.Log($"Guardando: {modo}, {minutos} min, {puntos} puntos, {segundos} s");
+
+        CambiarOcupado(true);
+        botonGuardarConfiguracion.interactable = false;
+
+        StartCoroutine(cliente.GuardarConfiguracion(
+            modo,
+            minutos,
+            puntos,
+            segundos,
+            () =>
+            {
+                StartCoroutine(cliente.ConsultarSala(
+                    sala =>
+                    {
+                        CambiarOcupado(false);
+                        botonGuardarConfiguracion.interactable = true;
+
+                        // Activar la sala antes de actualizar los jugadores.
+                        pantallaConfiguracion.SetActive(false);
+                        pantallaSala.SetActive(true);
+
+                        MostrarSala(sala);
+
+                        Debug.Log("Configuración guardada correctamente.");
+
+                        Debug.Log("Configuración guardada correctamente.");
+                    },
+                    error =>
+                    {
+                        CambiarOcupado(false);
+                        botonGuardarConfiguracion.interactable = true;
+                        Debug.LogError("Se guardó, pero no se pudo actualizar la sala: " + error);
+                    }));
+            },
+            error =>
+            {
+                CambiarOcupado(false);
+                botonGuardarConfiguracion.interactable = true;
+                Debug.LogError("Error al guardar configuración: " + error);
+            }));
+    }
+
 }

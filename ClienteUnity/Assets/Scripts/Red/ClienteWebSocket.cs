@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using NativeWebSocket;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class ClienteWebSocket : MonoBehaviour
 {
@@ -80,30 +81,32 @@ public class ClienteWebSocket : MonoBehaviour
             if (!mensaje.Contains("\"type\":\"player_moved\""))
                 Debug.Log("Mensaje recibido: " + mensaje);
 
-            MensajeRecibido?.Invoke(mensaje);
-
-            // Detecta cuando el servidor finaliza la partida.
-
             try
             {
                 var evento = JsonUtility.FromJson<MensajeTipo>(mensaje);
 
+                // Detecta el final y congela el juego.
                 if (evento != null && evento.type == "game_finished")
                 {
-                    if (partidaFinalizada)
-                        return;
+                    if (!partidaFinalizada)
+                    {
+                        partidaFinalizada = true;
+                        StartCoroutine(MostrarVictoriaConPausa());
+                    }
 
-                    partidaFinalizada = true;
-
-                    Debug.Log("Partida finalizada. Abriendo Victoria.");
-                    SceneManager.LoadScene("Victoria");
+                    return;
                 }
+
+                // Ignora mensajes después de finalizar.
+                if (partidaFinalizada)
+                    return;
+
+                MensajeRecibido?.Invoke(mensaje);
             }
             catch (Exception ex)
             {
                 Debug.LogWarning("Error al procesar mensaje: " + ex.Message);
             }
-
         };
 
 
@@ -156,6 +159,20 @@ public class ClienteWebSocket : MonoBehaviour
             ErrorConexion?.Invoke(ex.Message);
         }
     }
+    private IEnumerator MostrarVictoriaConPausa()
+    {
+        // Congela la simulación del juego.
+        Time.timeScale = 0f;
+
+        // Espera tres segundos reales.
+        yield return new WaitForSecondsRealtime(3f);
+
+        // Restaura el tiempo antes de cambiar de escena.
+        Time.timeScale = 1f;
+
+        SceneManager.LoadScene("Victoria");
+    }
+
 
     private void Update()
     {

@@ -18,12 +18,7 @@ public class VictoriaUI : MonoBehaviour
 
     private void Start()
     {
-        if (ContextoPartida.IdPartida <= 0)
-        {
-            Debug.LogWarning(
-                "No hay una partida activa para consultar el resultado.");
-            return;
-        }
+        Time.timeScale = 1f;
 
         if (cliente == null || txtTitulo == null ||
             txtNombreGanador == null || txtPuntos == null ||
@@ -33,8 +28,19 @@ public class VictoriaUI : MonoBehaviour
             return;
         }
 
-        StartCoroutine(CargarResultado(ContextoPartida.IdPartida));
+        int idPartida = ContextoPartida.IdPartida;
+
+        Debug.Log("VICTORIA - ID PARTIDA: " + idPartida);
+
+        if (idPartida <= 0)
+        {
+            MostrarError("No se encontró la partida actual.");
+            return;
+        }
+
+        StartCoroutine(CargarResultado(idPartida));
     }
+
 
     // Permite probar desde el menú del componente durante Play.
     [ContextMenu("Consultar resultado de prueba")]
