@@ -18,11 +18,24 @@ namespace ControlReactor.Negocio.Servicios
             if (jugador == null)
                 return null;
 
-            // Solo se permite puntuar durante una partida activa.
             if (jugador.Partida == null || jugador.Partida.Estado != "EN_CURSO")
                 return null;
 
-            jugador.Puntaje += 1;
+            var partida = jugador.Partida;
+
+            // Limitar los puntos al objetivo configurado.
+            if (partida.TipoFinalizacion == "PUNTOS" &&
+                partida.PuntajeObjetivo.HasValue)
+            {
+                jugador.Puntaje = Math.Min(
+                    jugador.Puntaje + 1,
+                    partida.PuntajeObjetivo.Value
+                );
+            }
+            else
+            {
+                jugador.Puntaje += 1;
+            }
 
             await _repositorio.ActualizarAsync(jugador);
 
@@ -37,6 +50,17 @@ namespace ControlReactor.Negocio.Servicios
                 return null;
 
             jugador.Puntaje = Math.Max(0, jugador.Puntaje + puntos);
+
+            // Aplicar también el límite a modificaciones de puntaje.
+            if (jugador.Partida != null &&
+                jugador.Partida.TipoFinalizacion == "PUNTOS" &&
+                jugador.Partida.PuntajeObjetivo.HasValue)
+            {
+                jugador.Puntaje = Math.Min(
+                    jugador.Puntaje,
+                    jugador.Partida.PuntajeObjetivo.Value
+                );
+            }
 
             await _repositorio.ActualizarAsync(jugador);
 
