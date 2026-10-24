@@ -2,7 +2,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
+using UnityEngine.SceneManagement;
 public class VictoriaUI : MonoBehaviour
 {
     [SerializeField] private ClienteResultadoPartida cliente;
@@ -110,5 +110,11 @@ public class VictoriaUI : MonoBehaviour
         txtPuntos.text = "";
         imagenGanador.enabled = false;
         Debug.LogWarning(mensaje, this);
+    }
+
+    public void VolverAlLobby()
+    {
+        ContextoPartida.Limpiar();
+        SceneManager.LoadScene("Lobby");
     }
 }
