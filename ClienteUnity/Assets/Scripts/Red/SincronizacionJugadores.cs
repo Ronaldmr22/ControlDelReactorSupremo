@@ -99,11 +99,23 @@ public class SincronizacionJugadores : MonoBehaviour
             if (remoto == null)
                 return;
 
-            remoto.position = new Vector3(
+            Vector3 nuevaPosicion = new Vector3(
                 mensaje.x,
                 mensaje.y,
                 remoto.position.z
             );
+
+            // Calcula hacia dónde se desplazó el jugador remoto.
+            Vector2 direccion = new Vector2(
+                nuevaPosicion.x - remoto.position.x,
+                nuevaPosicion.y - remoto.position.y);
+
+            var movimientoRemoto = remoto.GetComponent<MovimientoJugador>();
+
+            if (movimientoRemoto != null)
+                movimientoRemoto.ActualizarDireccionVisual(direccion);
+
+            remoto.position = nuevaPosicion;
         }
         else if (mensaje.type == "player_left")
         {
