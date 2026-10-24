@@ -63,21 +63,27 @@ public class MovimientoJugador : MonoBehaviour
                 Debug.LogWarning("Falta MensajeSobreAvatar en el personaje.");
         }
 
-        // Cambiar el sprite según la dirección.
-        if (movimiento == Vector2.zero)
+        ActualizarDireccionVisual(movimiento);
+    }
+    public void ActualizarDireccionVisual(Vector2 direccion)
+    {
+        // Al detenerse conserva la última orientación.
+        if (direccion.sqrMagnitude < 0.000001f)
             return;
+
+        if (imagen == null)
+            imagen = GetComponent<SpriteRenderer>();
 
         Sprite siguiente;
 
-        if (Mathf.Abs(movimiento.x) > Mathf.Abs(movimiento.y))
-            siguiente = movimiento.x > 0 ? derecha : izquierda;
+        if (Mathf.Abs(direccion.x) > Mathf.Abs(direccion.y))
+            siguiente = direccion.x > 0 ? derecha : izquierda;
         else
-            siguiente = movimiento.y > 0 ? arriba : abajo;
+            siguiente = direccion.y > 0 ? arriba : abajo;
 
         if (siguiente != null)
             imagen.sprite = siguiente;
     }
-
     private void FixedUpdate()
     {
         cuerpo.linearVelocity = movimiento * velocidad;
