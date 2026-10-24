@@ -3708,7 +3708,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 284068998}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2007175099}
+        m_TargetAssemblyTypeName: SalaUI, Assembly-CSharp
+        m_MethodName: GuardarConfiguracion
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &284068998
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7042,6 +7054,7 @@ MonoBehaviour:
   formaFinalizar: {fileID: 825267965}
   duracion: {fileID: 1431716344}
   puntajeObjetivo: {fileID: 2132795369}
+  tiempoParalisis: {fileID: 622666283}
 --- !u!1 &622666281
 GameObject:
   m_ObjectHideFlags: 0
@@ -19473,6 +19486,8 @@ MonoBehaviour:
   pantallaUnirse: {fileID: 1213351160}
   pantallaSala: {fileID: 649123239}
   pantallaConfiguracion: {fileID: 607552836}
+  configuracionPartida: {fileID: 607552840}
+  botonGuardarConfiguracion: {fileID: 284068997}
   inputCodigo: {fileID: 569037403}
   mensajeLobby: {fileID: 341615577}
   mensajeUnirse: {fileID: 1762175222}

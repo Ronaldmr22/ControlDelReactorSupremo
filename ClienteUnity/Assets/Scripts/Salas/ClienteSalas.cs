@@ -262,7 +262,7 @@ public class ClienteSalas : MonoBehaviour
         {
             idUsuario = SesionUsuario.IdUsuario,
             tipoFinalizacion = modo,
-            limiteTiempo = modo == "TIEMPO" ? minutos : 0,
+            limiteTiempo = modo == "TIEMPO" ? minutos * 60 : 0,
             puntajeObjetivo = modo == "PUNTOS" ? puntos : 0,
             segundosCongelamiento = segundosCongelamiento
         };

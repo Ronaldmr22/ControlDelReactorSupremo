@@ -26,6 +26,9 @@ public class ClienteResultadoPartida : MonoBehaviour
         solicitud.timeout = 20;
 
         yield return solicitud.SendWebRequest();
+        Debug.Log("URL RESULTADO: " + url);
+        Debug.Log("HTTP RESULTADO: " + solicitud.responseCode);
+        Debug.Log("JSON RESULTADO: " + solicitud.downloadHandler.text);
 
         if (solicitud.result != UnityWebRequest.Result.Success)
         {
