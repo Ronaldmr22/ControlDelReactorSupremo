@@ -8,6 +8,7 @@ public class ConfiguracionPartidaUI : MonoBehaviour
     [SerializeField] private TMP_Dropdown duracion;
     [SerializeField] private TMP_Dropdown puntajeObjetivo;
     [SerializeField] private TMP_Dropdown tiempoParalisis;
+    [SerializeField] private TMP_Text textoError;
 
     private void OnEnable()
     {
@@ -72,5 +73,17 @@ public class ConfiguracionPartidaUI : MonoBehaviour
         }
 
         return int.TryParse(numero, out int resultado) ? resultado : 0;
+    }
+
+    public void MostrarError(string error)
+    {
+        if (textoError != null)
+            textoError.text = error;
+    }
+
+    public void LimpiarError()
+    {
+        if (textoError != null)
+            textoError.text = "";
     }
 }

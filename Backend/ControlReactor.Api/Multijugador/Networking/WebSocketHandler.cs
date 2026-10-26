@@ -148,6 +148,9 @@ public sealed class WebSocketHandler
             case "move":
                 await RelayMovementAsync(connection, message);
                 break;
+            case "action":
+                await RelayActionAsync(connection);
+                break;
 
             default:
                 await SendErrorAsync(
@@ -373,6 +376,50 @@ public sealed class WebSocketHandler
         foreach (var recipient in recipients)
         {
             await recipient.SendAsync(movementMessage);
+        }
+    }
+
+    private async Task RelayActionAsync(ClientConnection connection)
+    {
+        // Verificar que el jugador pertenezca a una partida.
+        if (!connection.IdJugadorPartida.HasValue ||
+            string.IsNullOrEmpty(connection.RoomCode))
+        {
+            await SendErrorAsync(
+                connection,
+                "El jugador no pertenece a una partida válida.");
+            return;
+        }
+
+        // Obtener las conexiones de la sala.
+        List<ClientConnection> conexiones =
+            _groupManager.ObtenerConexionesSala(connection.RoomCode);
+
+        // Confirmar que el emisor sigue registrado en esa sala.
+        if (!conexiones.Any(c => ReferenceEquals(c, connection)))
+        {
+            await SendErrorAsync(
+                connection,
+                "La conexión no está registrada en la sala.");
+            return;
+        }
+
+        // Crear el evento que recibirá el otro jugador.
+        var mensajeAccion = new ServerMessage
+        {
+            Type = "player_action",
+            RoomCode = connection.RoomCode,
+            PlayerId = connection.PlayerId,
+            PlayerName = connection.PlayerName
+        };
+
+        // Enviar la acción solamente a los otros jugadores.
+        foreach (var destinatario in conexiones)
+        {
+            if (destinatario.PlayerId == connection.PlayerId)
+                continue;
+
+            await destinatario.SendAsync(mensajeAccion);
         }
     }
 

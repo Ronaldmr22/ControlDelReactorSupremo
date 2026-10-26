@@ -244,9 +244,16 @@ public class ClienteSalas : MonoBehaviour
             yield break;
         }
 
-        if (SesionUsuario.IdUsuario != SalaActual.idUsuarioCreador)
+        if (SesionUsuario.IdUsuario <= 0)
         {
-            alError?.Invoke("Solo el anfitrión puede configurar la partida.");
+            alError?.Invoke("Debes iniciar sesión primero.");
+            yield break;
+        }
+        
+        if (SalaActual.estado != "ESPERANDO")
+        {
+            alError?.Invoke(
+                "No se puede modificar la configuración porque la partida ya comenzó.");
             yield break;
         }
 

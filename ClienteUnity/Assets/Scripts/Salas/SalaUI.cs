@@ -123,13 +123,13 @@ public class SalaUI : MonoBehaviour
             ? $"Esperando jugador... ({cantidad}/3)"
             : $"Participantes en la sala: {cantidad}/3";
 
-        botonConfiguracion.SetActive(soyCreador);
+        botonConfiguracion.SetActive(true);
 
         botonIniciar.interactable = soyCreador &&
         cantidad >= 2 &&
         sala.estado == "ESPERANDO" &&
         !ocupado &&
-        !entrandoPartida; 
+        !entrandoPartida;
     }
 
     private void CambiarOcupado(bool valor)
@@ -331,6 +331,8 @@ public class SalaUI : MonoBehaviour
             return;
         }
 
+        configuracionPartida.LimpiarError();
+
         string modo = configuracionPartida.ObtenerTipoFinalizacion();
         int minutos = configuracionPartida.ObtenerDuracion();
         int puntos = configuracionPartida.ObtenerPuntaje();
@@ -361,21 +363,54 @@ public class SalaUI : MonoBehaviour
                         MostrarSala(sala);
 
                         Debug.Log("Configuración guardada correctamente.");
-
-                        Debug.Log("Configuración guardada correctamente.");
                     },
                     error =>
                     {
                         CambiarOcupado(false);
                         botonGuardarConfiguracion.interactable = true;
-                        Debug.LogError("Se guardó, pero no se pudo actualizar la sala: " + error);
+
+                        configuracionPartida.MostrarError(
+                            "Se guardó la configuración, pero no se pudo actualizar la sala: " + error);
+
+                        Debug.LogError("Error al consultar la sala: " + error);
                     }));
             },
             error =>
             {
                 CambiarOcupado(false);
                 botonGuardarConfiguracion.interactable = true;
+                configuracionPartida.MostrarError(error);
                 Debug.LogError("Error al guardar configuración: " + error);
+            }));
+    }
+
+    public void AbrirConfiguracion()
+    {
+        if (ocupado || cliente.SalaActual == null)
+            return;
+
+        StartCoroutine(cliente.ConsultarSala(
+            sala =>
+            {
+                if (sala.estado != "ESPERANDO")
+                {
+                    Debug.LogWarning(
+                        "No se puede acceder a la configuración porque la partida ya comenzó."
+                    );
+
+                    textoEstadoSala.text =
+                        "No se puede modificar la configuración porque la partida ya comenzó.";
+
+                    return;
+                }
+
+                configuracionPartida?.LimpiarError();
+                pantallaSala.SetActive(false);
+                pantallaConfiguracion.SetActive(true);
+            },
+            error =>
+            {
+                textoEstadoSala.text = error;
             }));
     }
 
