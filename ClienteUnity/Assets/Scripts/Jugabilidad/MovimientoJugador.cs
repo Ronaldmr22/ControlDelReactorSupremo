@@ -1,4 +1,4 @@
-
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,6 +16,8 @@ public class MovimientoJugador : MonoBehaviour
     private SpriteRenderer imagen;
     private Vector2 movimiento;
     private MensajeSobreAvatar mensaje;
+
+    public event Action AccionEjecutada;
 
     private void Awake()
     {
@@ -52,7 +54,7 @@ public class MovimientoJugador : MonoBehaviour
 
         movimiento = Vector2.ClampMagnitude(movimiento, 1f);
 
-        // Acción con el botón X del control Xbox.
+        // Acción con el botón X del control.
         if (control != null && control.buttonSouth.wasPressedThisFrame)
         {
             Debug.Log("Acción ejecutada");
@@ -61,6 +63,9 @@ public class MovimientoJugador : MonoBehaviour
                 mensaje.Mostrar("Acción");
             else
                 Debug.LogWarning("Falta MensajeSobreAvatar en el personaje.");
+
+            // Notificar al sistema multijugador.
+            AccionEjecutada?.Invoke();
         }
 
         ActualizarDireccionVisual(movimiento);

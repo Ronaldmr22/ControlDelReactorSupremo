@@ -22,6 +22,7 @@ public class SincronizacionJugadores : MonoBehaviour
     private float siguienteEnvio;
     private Vector3 ultimaPosicionEnviada;
     private bool primeraPosicion = true;
+    private MovimientoJugador movimientoLocal;
 
     private void OnEnable()
     {
@@ -33,10 +34,17 @@ public class SincronizacionJugadores : MonoBehaviour
     {
         if (cliente != null)
             cliente.MensajeRecibido -= ProcesarMensaje;
+
+        if (movimientoLocal != null)
+        {
+            movimientoLocal.AccionEjecutada -= EnviarAccion;
+            movimientoLocal = null;
+        }
     }
 
     private void Update()
     {
+        VincularAccionLocal();
         if (cliente == null ||
             !cliente.EstaConectado ||
             generador == null ||
@@ -117,10 +125,64 @@ public class SincronizacionJugadores : MonoBehaviour
 
             remoto.position = nuevaPosicion;
         }
+        else if (mensaje.type == "player_action")
+        {
+            if (mensaje.playerId == miIdWebSocket)
+                return;
+
+            if (generador == null)
+                return;
+
+            Transform remoto =
+                generador.ObtenerJugadorRemoto(mensaje.playerId);
+
+            if (remoto == null)
+                return;
+
+            MensajeSobreAvatar mensajeAvatar =
+                remoto.GetComponent<MensajeSobreAvatar>();
+
+            if (mensajeAvatar != null)
+                mensajeAvatar.Mostrar("Acción");
+        }
         else if (mensaje.type == "player_left")
         {
             if (generador != null)
                 generador.EliminarJugadorRemoto(mensaje.playerId);
         }
     }
+
+    private void EnviarAccion()
+    {
+        if (cliente == null ||
+            !cliente.EstaConectado ||
+            string.IsNullOrEmpty(miIdWebSocket))
+            return;
+
+        cliente.EnviarMensaje(JsonUtility.ToJson(new MensajeRed
+        {
+            type = "action"
+        }));
+    }
+
+    private void VincularAccionLocal()
+    {
+        if (generador == null || generador.JugadorLocal == null)
+            return;
+
+        MovimientoJugador movimiento =
+            generador.JugadorLocal.GetComponent<MovimientoJugador>();
+
+        if (movimiento == movimientoLocal)
+            return;
+
+        if (movimientoLocal != null)
+            movimientoLocal.AccionEjecutada -= EnviarAccion;
+
+        movimientoLocal = movimiento;
+
+        if (movimientoLocal != null)
+            movimientoLocal.AccionEjecutada += EnviarAccion;
+    }
+
 }

@@ -853,21 +853,28 @@ app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
         });
     }
 
-    // Solo el creador de la sala puede cambiar la configuración.
-    if (partida.IdUsuarioCreador != datos.IdUsuario)
+    // Verificar que el usuario pertenezca a la partida
+    // y continúe activo dentro de la sala.
+    bool esParticipante = await db.JugadoresPartida
+        .AnyAsync(j =>
+            j.IdPartida == idPartida &&
+            j.IdUsuario == datos.IdUsuario &&
+            j.EnSala);
+
+    if (!esParticipante)
     {
         return Results.Json(new
         {
-            mensaje = "Solo el anfitrión puede modificar la configuración."
+            mensaje = "No perteneces a esta sala."
         }, statusCode: 403);
     }
 
-    // No permitir cambios después de iniciar la partida.
+    // No permitir modificaciones después de iniciar la partida.
     if (partida.Estado != "ESPERANDO")
     {
-        return Results.BadRequest(new
+        return Results.Conflict(new
         {
-            mensaje = "La partida ya no está esperando jugadores."
+            mensaje = "No se puede modificar la configuración porque la partida ya comenzó."
         });
     }
 
