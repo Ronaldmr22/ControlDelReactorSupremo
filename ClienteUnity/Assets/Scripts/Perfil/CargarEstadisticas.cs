@@ -30,6 +30,14 @@ public class CargarEstadisticas : MonoBehaviour
     }
 
     [Serializable]
+    private class LogroDto
+    {
+        public int idLogro;
+        public string nombre;
+        public string descripcion;
+    }
+
+    [Serializable]
     private class EstadisticasDto
     {
         public int partidasJugadas;
@@ -37,7 +45,7 @@ public class CargarEstadisticas : MonoBehaviour
         public int partidasPerdidas;
         public int puntosTotales;
         public int posicionRanking;
-        public int logrosObtenidos;
+        public LogroDto[] logros;
         public PartidaDto[] historialPartidas;
     }
 
@@ -48,6 +56,8 @@ public class CargarEstadisticas : MonoBehaviour
             Debug.LogWarning("No hay un usuario con sesión iniciada.");
             return;
         }
+
+        Debug.Log("ID del usuario actual: " + SesionUsuario.IdUsuario);
 
         StartCoroutine(ObtenerEstadisticas());
     }
@@ -92,8 +102,12 @@ public class CargarEstadisticas : MonoBehaviour
             txtPartidasPerdidas.text =
                 "Partidas Perdidas: " + datos.partidasPerdidas;
 
+            int cantidadLogros = datos.logros != null
+                ? datos.logros.Length
+                : 0;
+
             txtLogrosObtenidos.text =
-                "Logros Obtenidos: " + datos.logrosObtenidos;
+                "Logros Obtenidos: " + cantidadLogros;
 
             // Historial de partidas
             MostrarHistorial(datos.historialPartidas);
