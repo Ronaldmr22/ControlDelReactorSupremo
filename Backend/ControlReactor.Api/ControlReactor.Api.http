@@ -1,0 +1,6 @@
+@ControlReactor.Api_HostAddress = http://localhost:5008
+
+GET {{ControlReactor.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
