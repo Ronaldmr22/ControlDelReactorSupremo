@@ -11,6 +11,7 @@ public class CargarEstadisticas : MonoBehaviour
     [SerializeField] private TMP_Text txtPartidasJugadas;
     [SerializeField] private TMP_Text txtPartidasGanadas;
     [SerializeField] private TMP_Text txtPartidasPerdidas;
+    [SerializeField] private TMP_Text txtLogrosObtenidos;
 
     [Header("Historial")]
     [SerializeField] private TMP_Text txtHistorialPartidas;
@@ -36,6 +37,7 @@ public class CargarEstadisticas : MonoBehaviour
         public int partidasPerdidas;
         public int puntosTotales;
         public int posicionRanking;
+        public int logrosObtenidos;
         public PartidaDto[] historialPartidas;
     }
 
@@ -89,6 +91,9 @@ public class CargarEstadisticas : MonoBehaviour
 
             txtPartidasPerdidas.text =
                 "Partidas Perdidas: " + datos.partidasPerdidas;
+
+            txtLogrosObtenidos.text =
+                "Logros Obtenidos: " + datos.logrosObtenidos;
 
             // Historial de partidas
             MostrarHistorial(datos.historialPartidas);

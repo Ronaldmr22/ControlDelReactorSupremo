@@ -724,6 +724,8 @@ app.MapGet("/api/usuarios/{idUsuario:int}/estadisticas", async (
     partidasJugadas,
     partidasGanadas);
 
+    int logrosObtenidos = logros.Count;
+
     return Results.Ok(new
     {
         idUsuario,
@@ -733,6 +735,7 @@ app.MapGet("/api/usuarios/{idUsuario:int}/estadisticas", async (
         puntosTotales,
         posicionRanking,
         logros,
+        logrosObtenidos,
         historialPartidas = historial
     });
 });
