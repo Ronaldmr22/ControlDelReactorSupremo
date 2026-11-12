@@ -12,6 +12,7 @@ public class CargarEstadisticas : MonoBehaviour
     [SerializeField] private TMP_Text txtPartidasGanadas;
     [SerializeField] private TMP_Text txtPartidasPerdidas;
     [SerializeField] private TMP_Text txtLogrosObtenidos;
+    [SerializeField] private TMP_Text txtPuntosAcumulados;
 
     [Header("Historial")]
     [SerializeField] private TMP_Text txtHistorialPartidas;
@@ -101,6 +102,12 @@ public class CargarEstadisticas : MonoBehaviour
 
             txtPartidasPerdidas.text =
                 "Partidas Perdidas: " + datos.partidasPerdidas;
+
+            if (txtPuntosAcumulados != null)
+            {
+                txtPuntosAcumulados.text =
+                    "Puntos Acumulados: " + datos.puntosTotales;
+            }
 
             int cantidadLogros = datos.logros != null
                 ? datos.logros.Length
