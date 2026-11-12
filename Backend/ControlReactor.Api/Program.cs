@@ -974,6 +974,7 @@ app.Map("/ws", async context =>
 });
 
 
+
  // Obtiene el resultado definitivo para la pantalla de victoria.
 app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
     int idPartida,
@@ -1000,19 +1001,46 @@ app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
     if (usuario == null)
         return Results.NotFound(new { mensaje = "No se encontró al usuario ganador." });
 
+    // Crear la clasificación completa de la partida.
+    var clasificacion = new List<object>();
+
+    for (int i = 0; i < jugadores.Count; i++)
+    {
+        var jugador = jugadores[i];
+
+        var usuarioJugador = await usuarioRepositorio
+            .ObtenerPorIdAsync(jugador.IdUsuario);
+
+        clasificacion.Add(new
+        {
+            posicion = i + 1,
+            idUsuario = jugador.IdUsuario,
+            nombreUsuario = usuarioJugador?.NombreUsuario ?? "Desconocido",
+            avatarSeleccionado = usuarioJugador?.AvatarSeleccionado ?? 0,
+            puntaje = jugador.Puntaje,
+            esGanador = jugador.EsGanador
+        });
+    }
+
     return Results.Ok(new
     {
         idPartida = partida.IdPartida,
         estado = partida.Estado,
+
+        // Mantener los datos originales del ganador.
         ganador = new
         {
             idUsuario = usuario.IdUsuario,
             nombreUsuario = usuario.NombreUsuario,
             avatarSeleccionado = usuario.AvatarSeleccionado ?? 0,
             puntaje = ganador.Puntaje
-        }
+        },
+
+        // Agregar las posiciones de todos los participantes.
+        clasificacion
     });
 });
+
 
 
 app.Run();

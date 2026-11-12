@@ -79,6 +79,23 @@ public class VictoriaUI : MonoBehaviour
     {
         var ganador = resultado.ganador;
 
+        // Mostrar la clasificación completa en la consola.
+        if (resultado.clasificacion != null)
+        {
+            foreach (var jugador in resultado.clasificacion)
+            {
+                Debug.Log(
+                    $"Posición {jugador.posicion}: " +
+                    $"{jugador.nombreUsuario} - " +
+                    $"{jugador.puntaje} puntos"
+                );
+            }
+        }
+        else
+        {
+            Debug.LogWarning("No se recibió la clasificación de la partida.");
+        }
+
         txtTitulo.text = "¡Felicidades al ganador!";
         txtNombreGanador.text = ganador.nombreUsuario;
         txtPuntos.text = $"{ganador.puntaje} puntos";
