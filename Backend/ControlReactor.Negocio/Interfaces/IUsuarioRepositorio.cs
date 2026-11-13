@@ -14,6 +14,7 @@ namespace ControlReactor.Negocio.Interfaces
         Task<Usuario?> ObtenerPorGoogleAsync(string idGoogle);
         Task VincularGoogleAsync(int idUsuario, string idGoogle);
         Task<Usuario> CrearUsuarioGoogleAsync(Usuario usuario, string idGoogle);
+        Task<bool> TieneGoogleVinculadoAsync(int idUsuario);
 
     }
 }
