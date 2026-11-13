@@ -149,6 +149,7 @@ public class GoogleLoginReceiver : MonoBehaviour
             SesionUsuario.NombreUsuario = respuesta.nombreUsuario;
 
             Debug.Log("Google autenticado: " + respuesta.nombreUsuario);
+            SceneManager.LoadScene("Lobby");
         }
     }
 
