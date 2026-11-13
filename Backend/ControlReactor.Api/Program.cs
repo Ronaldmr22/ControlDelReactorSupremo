@@ -22,6 +22,12 @@ builder.Services.AddAuthentication(options =>
     .AddCookie("GoogleCookie")
     .AddGoogle("Google", options =>
     {
+        options.Scope.Add("email");
+
+        options.ClaimActions.MapJsonKey(
+            "email_verified",
+            "email_verified");
+            
         options.ClientId = builder.Configuration["Authentication:Google:ClientId"]
             ?? throw new InvalidOperationException("Falta el ClientId de Google.");
 
@@ -40,6 +46,7 @@ builder.Services.AddScoped<ServicioRegistroUsuario>();
 builder.Services.AddScoped<ServicioCodigoVerificacion>();
 builder.Services.AddScoped<ServicioVerificacionCorreo>();
 builder.Services.AddScoped<ServicioLoginUsuario>();
+builder.Services.AddScoped<ServicioLoginGoogle>();
 builder.Services.AddScoped<ServicioRecuperacionPassword>();
 
 builder.Services.AddScoped<ServicioAvatarUsuario>();
@@ -105,9 +112,9 @@ app.MapGet("/api/usuarios/login-google", () =>
 });
 
 app.MapGet("/api/usuarios/google-resultado",
-    async (HttpContext contexto) =>
+    async (HttpContext contexto, ServicioLoginGoogle servicio) =>
     {
-        // Recuperar la identidad autenticada mediante Google
+        // Recuperar la identidad autenticada
         var resultado = await contexto.AuthenticateAsync("GoogleCookie");
 
         if (!resultado.Succeeded || resultado.Principal == null)
@@ -115,36 +122,59 @@ app.MapGet("/api/usuarios/google-resultado",
             return Results.Unauthorized();
         }
 
-        // Obtener la información del usuario
-        var idGoogle = resultado.Principal.FindFirst(
+        var identidad = resultado.Principal;
+
+        // Obtener los datos proporcionados por Google
+        var idGoogle = identidad.FindFirst(
             System.Security.Claims.ClaimTypes.NameIdentifier
         )?.Value;
 
-        var correo = resultado.Principal.FindFirst(
+        var correo = identidad.FindFirst(
             System.Security.Claims.ClaimTypes.Email
         )?.Value;
 
-        var nombre = resultado.Principal.FindFirst(
+        var nombre = identidad.FindFirst(
             System.Security.Claims.ClaimTypes.Name
-        )?.Value;
+        )?.Value ?? "";
 
-        // Evitar que quede una sesión temporal abierta
+        // Google debe confirmar que el correo está verificado
+        var correoVerificado = identidad.FindFirst("email_verified")?.Value;
+        Console.WriteLine(
+            $"Google OAuth - Correo verificado: {correoVerificado ?? "NO RECIBIDO"}"
+        );
+
         await contexto.SignOutAsync("GoogleCookie");
 
-        if (string.IsNullOrEmpty(idGoogle) ||
-            string.IsNullOrEmpty(correo))
+        // No registrar usuarios si falta la confirmación del correo
+        if (correoVerificado != "true")
         {
             return Results.BadRequest(new
             {
-                mensaje = "Google no proporcionó los datos necesarios."
+                mensaje = "No se pudo confirmar que Google verificó el correo."
+            });
+        }
+
+        // Buscar o registrar al usuario en PostgreSQL
+        var login = await servicio.LoginAsync(
+            idGoogle ?? "",
+            correo ?? "",
+            nombre,
+            true
+        );
+
+        if (!login.Exito)
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = login.Mensaje
             });
         }
 
         return Results.Ok(new
         {
-            mensaje = "Autenticación con Google completada.",
-            nombre,
-            correo
+            mensaje = login.Mensaje,
+            idUsuario = login.Usuario!.IdUsuario,
+            nombreUsuario = login.Usuario.NombreUsuario
         });
     });
 
