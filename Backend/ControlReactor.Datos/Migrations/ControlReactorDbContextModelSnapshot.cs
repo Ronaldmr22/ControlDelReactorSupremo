@@ -231,6 +231,36 @@ namespace ControlReactor.Datos.Migrations
                     b.ToTable("Usuarios");
                 });
 
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.UsuarioLoginGoogle", b =>
+                {
+                    b.Property<int>("IdUsuarioLoginGoogle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdUsuarioLoginGoogle"));
+
+                    b.Property<string>("IdGoogle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Proveedor")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("IdUsuarioLoginGoogle");
+
+                    b.HasIndex("IdGoogle")
+                        .IsUnique();
+
+                    b.HasIndex("IdUsuario")
+                        .IsUnique();
+
+                    b.ToTable("UsuariosLoginGoogle");
+                });
+
             modelBuilder.Entity("ControlReactor.Modelos.Entidades.UsuarioLogro", b =>
                 {
                     b.Property<int>("IdUsuarioLogro")
@@ -294,6 +324,17 @@ namespace ControlReactor.Datos.Migrations
                         .IsRequired();
 
                     b.Navigation("Partida");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.UsuarioLoginGoogle", b =>
+                {
+                    b.HasOne("ControlReactor.Modelos.Entidades.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Usuario");
                 });
