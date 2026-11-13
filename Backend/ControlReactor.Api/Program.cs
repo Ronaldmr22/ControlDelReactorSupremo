@@ -75,6 +75,9 @@ builder.Services.AddOpenApi();
 builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
 
+// Registrar servicios de autorización
+builder.Services.AddAuthorization();
+
 var app = builder.Build();
 
 app.UseWebSockets();
