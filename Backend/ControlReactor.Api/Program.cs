@@ -7,8 +7,31 @@ using ControlReactor.Modelos.DTOs;
 using ControlReactor.Api.ServicioSegundoPlano;
 using ControlReactor.Modelos.Entidades;
 using ControlReactor.Api.Multijugador.Networking;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Autenticación con Google
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = "GoogleCookie";
+        options.DefaultChallengeScheme = "Google";
+    })
+    .AddCookie("GoogleCookie")
+    .AddGoogle("Google", options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]
+            ?? throw new InvalidOperationException("Falta el ClientId de Google.");
+
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+            ?? throw new InvalidOperationException("Falta el ClientSecret de Google.");
+
+        options.CallbackPath = "/signin-google";
+
+        options.SignInScheme = "GoogleCookie";
+    });
 
 // Servicios para registro y verificación de usuarios.
 builder.Services.AddHttpClient<ServicioValidacionCorreo>();
@@ -55,6 +78,8 @@ builder.Services.AddSingleton<WebSocketHandler>();
 var app = builder.Build();
 
 app.UseWebSockets();
+app.UseAuthentication();
+app.UseAuthorization();
 
 // OpenAPI disponible durante desarrollo
 if (app.Environment.IsDevelopment())
@@ -62,11 +87,63 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Endpoint temporal para comprobar que el servidor funciona
-app.MapGet("/api/prueba", () =>
+// Iniciar autenticación con Google
+app.MapGet("/api/usuarios/login-google", () =>
 {
-    return "Servidor de Control del Reactor funcionando";
+    var propiedades = new AuthenticationProperties
+    {
+        RedirectUri = "/api/usuarios/google-resultado"
+    };
+
+    return Results.Challenge(
+        propiedades,
+        authenticationSchemes: new[] { GoogleDefaults.AuthenticationScheme }
+    );
 });
+
+app.MapGet("/api/usuarios/google-resultado",
+    async (HttpContext contexto) =>
+    {
+        // Recuperar la identidad autenticada mediante Google
+        var resultado = await contexto.AuthenticateAsync("GoogleCookie");
+
+        if (!resultado.Succeeded || resultado.Principal == null)
+        {
+            return Results.Unauthorized();
+        }
+
+        // Obtener la información del usuario
+        var idGoogle = resultado.Principal.FindFirst(
+            System.Security.Claims.ClaimTypes.NameIdentifier
+        )?.Value;
+
+        var correo = resultado.Principal.FindFirst(
+            System.Security.Claims.ClaimTypes.Email
+        )?.Value;
+
+        var nombre = resultado.Principal.FindFirst(
+            System.Security.Claims.ClaimTypes.Name
+        )?.Value;
+
+        // Evitar que quede una sesión temporal abierta
+        await contexto.SignOutAsync("GoogleCookie");
+
+        if (string.IsNullOrEmpty(idGoogle) ||
+            string.IsNullOrEmpty(correo))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "Google no proporcionó los datos necesarios."
+            });
+        }
+
+        return Results.Ok(new
+        {
+            mensaje = "Autenticación con Google completada.",
+            nombre,
+            correo
+        });
+    });
 
 
 app.MapPost("/api/usuarios/registro", async (RegistroUsuarioDto dto,ServicioRegistroUsuario servicio) =>
