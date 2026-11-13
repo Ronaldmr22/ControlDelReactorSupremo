@@ -24,10 +24,8 @@ builder.Services.AddAuthentication(options =>
     {
         options.Scope.Add("email");
 
-        options.ClaimActions.MapJsonKey(
-            "email_verified",
-            "email_verified");
-            
+        options.SaveTokens = true;
+
         options.ClientId = builder.Configuration["Authentication:Google:ClientId"]
             ?? throw new InvalidOperationException("Falta el ClientId de Google.");
 
@@ -35,8 +33,20 @@ builder.Services.AddAuthentication(options =>
             ?? throw new InvalidOperationException("Falta el ClientSecret de Google.");
 
         options.CallbackPath = "/signin-google";
-
         options.SignInScheme = "GoogleCookie";
+
+        options.Events.OnCreatingTicket = context =>
+        {
+            if (context.User.TryGetProperty("email_verified", out var verificado))
+            {
+                var valor = verificado.GetBoolean() ? "true" : "false";
+
+                context.Identity?.AddClaim(
+                    new System.Security.Claims.Claim("email_verified", valor)
+                );
+            }
+            return Task.CompletedTask;
+        };
     });
 
 // Servicios para registro y verificación de usuarios.
