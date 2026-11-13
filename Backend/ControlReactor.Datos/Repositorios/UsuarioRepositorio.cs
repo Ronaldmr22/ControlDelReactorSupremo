@@ -49,5 +49,58 @@ namespace ControlReactor.Datos.Repositorios
             return await _context.Usuarios.FirstOrDefaultAsync(u => u.IdUsuario == idUsuario);
         }
 
+        // Busca un usuario vinculado a una cuenta de Google
+        public async Task<Usuario?> ObtenerPorGoogleAsync(string idGoogle)
+        {
+            return await _context.UsuariosLoginGoogle
+                .Where(g => g.IdGoogle == idGoogle && g.Proveedor == "Google")
+                .Select(g => g.Usuario)
+                .FirstOrDefaultAsync();
+        }
+
+        // Vincula una cuenta de Google con un usuario del juego
+        public async Task VincularGoogleAsync(int idUsuario, string idGoogle)
+        {
+            var vinculacion = new UsuarioLoginGoogle
+            {
+                IdUsuario = idUsuario,
+                Proveedor = "Google",
+                IdGoogle = idGoogle
+            };
+
+            _context.UsuariosLoginGoogle.Add(vinculacion);
+
+            await _context.SaveChangesAsync();
+        }
+
+        // Crea un usuario y vincula su cuenta de Google
+        public async Task<Usuario> CrearUsuarioGoogleAsync(
+            Usuario usuario,
+            string idGoogle)
+        {
+            await using var transaccion =
+                await _context.Database.BeginTransactionAsync();
+
+            // Crear usuario
+            _context.Usuarios.Add(usuario);
+            await _context.SaveChangesAsync();
+
+            // Crear vinculación con Google
+            var vinculacion = new UsuarioLoginGoogle
+            {
+                IdUsuario = usuario.IdUsuario,
+                Proveedor = "Google",
+                IdGoogle = idGoogle
+            };
+
+            _context.UsuariosLoginGoogle.Add(vinculacion);
+            await _context.SaveChangesAsync();
+
+            // Confirmar ambas operaciones
+            await transaccion.CommitAsync();
+
+            return usuario;
+        }
+
     }
 }
