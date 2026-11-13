@@ -15,6 +15,7 @@ public class ClienteSalas : MonoBehaviour
     {
         public int idUsuario;
         public string codigoSala;
+
     }
 
     [Serializable]
@@ -25,6 +26,7 @@ public class ClienteSalas : MonoBehaviour
         public int limiteTiempo;
         public int puntajeObjetivo;
         public int segundosCongelamiento;
+        public int idEscenario;
     }
 
 
@@ -235,6 +237,7 @@ public class ClienteSalas : MonoBehaviour
         int minutos,
         int puntos,
         int segundosCongelamiento,
+        int idEscenario,
         Action alCompletar,
         Action<string> alError)
     {
@@ -271,7 +274,8 @@ public class ClienteSalas : MonoBehaviour
             tipoFinalizacion = modo,
             limiteTiempo = modo == "TIEMPO" ? minutos * 60 : 0,
             puntajeObjetivo = modo == "PUNTOS" ? puntos : 0,
-            segundosCongelamiento = segundosCongelamiento
+            segundosCongelamiento = segundosCongelamiento,
+            idEscenario = idEscenario
         };
 
         string json = JsonUtility.ToJson(datos);

@@ -180,6 +180,7 @@ namespace ControlReactor.Datos.Repositorios
             return new SalaDto
             {
                 IdPartida = partida.IdPartida,
+                IdEscenario = partida.IdEscenario,
                 CodigoSala = partida.CodigoSala!,
                 Estado = partida.Estado,
                 IdUsuarioCreador = partida.IdUsuarioCreador ?? 0,

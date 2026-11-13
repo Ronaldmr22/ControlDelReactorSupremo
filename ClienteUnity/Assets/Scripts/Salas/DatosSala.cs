@@ -4,6 +4,7 @@ using System;
 public class DatosSala
 {
     public int idPartida;
+    public int idEscenario;
     public string codigoSala;
     public string estado;
     public int idUsuarioCreador;

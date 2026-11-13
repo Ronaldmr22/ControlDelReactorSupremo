@@ -1215,6 +1215,25 @@ app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
         });
     }
 
+    if (datos.IdEscenario is int idEscenario)
+    {
+        if (partida.IdUsuarioCreador != datos.IdUsuario)
+        {
+            return Results.Json(new
+            {
+                mensaje = "Solo el anfitrión puede elegir el escenario."
+            }, statusCode: 403);
+        }
+
+        if (idEscenario != 1)
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "El escenario seleccionado todavía no está disponible."
+            });
+        }
+    }
+
     string modo = datos.TipoFinalizacion.Trim().ToUpperInvariant();
 
     if (modo != "TIEMPO" && modo != "PUNTOS")
@@ -1264,12 +1283,14 @@ app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
     partida.SegundosCongelamiento = datos.SegundosCongelamiento;
 
     // Guardar los cambios en PostgreSQL.
+    partida.IdEscenario = datos.IdEscenario ?? partida.IdEscenario;
     await db.SaveChangesAsync();
 
     return Results.Ok(new
     {
         mensaje = "Configuración guardada correctamente.",
         idPartida = partida.IdPartida,
+        idEscenario = partida.IdEscenario,
         tipoFinalizacion = partida.TipoFinalizacion,
         limiteTiempo = partida.LimiteTiempo,
         puntajeObjetivo = partida.PuntajeObjetivo,

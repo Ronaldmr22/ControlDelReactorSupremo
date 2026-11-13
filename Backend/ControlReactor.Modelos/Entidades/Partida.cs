@@ -5,6 +5,8 @@ namespace ControlReactor.Modelos.Entidades
         public int IdPartida { get; set; }
         
         public string? CodigoSala { get; set; }
+        
+        public int IdEscenario { get; set; } = 1;
 
         public int? IdUsuarioCreador { get; set; }
 
