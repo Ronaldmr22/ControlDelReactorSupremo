@@ -11,5 +11,7 @@ namespace ControlReactor.Modelos.DTOs
         public int? PuntajeObjetivo { get; set; }
 
         public int SegundosCongelamiento { get; set; }
+
+        public int? IdEscenario { get; set; }
     }
 }

@@ -167,6 +167,9 @@ namespace ControlReactor.Datos.Migrations
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("IdEscenario")
+                        .HasColumnType("integer");
+
                     b.Property<int?>("IdUsuarioCreador")
                         .HasColumnType("integer");
 

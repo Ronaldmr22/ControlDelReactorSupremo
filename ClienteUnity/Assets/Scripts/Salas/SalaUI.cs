@@ -299,6 +299,18 @@ public class SalaUI : MonoBehaviour
         if (entrandoPartida)
             return;
 
+        string nombreEscena = sala.idEscenario switch
+        {
+            0 => "mapa1", // Compatibilidad con el backend anterior.
+            1 => "mapa1",
+            _ => null
+        };
+
+        if (nombreEscena == null)
+        {
+            textoEstadoSala.text = "Este escenario no está disponible en tu versión del juego.";
+            return;
+        }
         entrandoPartida = true;
 
         if (actualizacionSala != null)
@@ -316,7 +328,7 @@ public class SalaUI : MonoBehaviour
         Debug.Log("Mi usuario: " + SesionUsuario.IdUsuario);
         Debug.Log("==================================");
 
-        SceneManager.LoadScene("Mapa1");
+        SceneManager.LoadScene(nombreEscena);
     }
 
 
@@ -333,6 +345,14 @@ public class SalaUI : MonoBehaviour
 
         configuracionPartida.LimpiarError();
 
+        int idEscenario = configuracionPartida.ObtenerIdEscenario();
+
+        if (idEscenario == 0)
+        {
+            configuracionPartida.MostrarError("No se pudo leer el escenario.");
+            return;
+        }
+
         string modo = configuracionPartida.ObtenerTipoFinalizacion();
         int minutos = configuracionPartida.ObtenerDuracion();
         int puntos = configuracionPartida.ObtenerPuntaje();
@@ -343,11 +363,13 @@ public class SalaUI : MonoBehaviour
         CambiarOcupado(true);
         botonGuardarConfiguracion.interactable = false;
 
+
         StartCoroutine(cliente.GuardarConfiguracion(
             modo,
             minutos,
             puntos,
             segundos,
+            idEscenario,
             () =>
             {
                 StartCoroutine(cliente.ConsultarSala(
