@@ -133,7 +133,6 @@ app.MapGet("/api/usuarios/google-resultado",
         }
 
         var identidad = resultado.Principal;
-        var idToken = resultado.Properties?.GetTokenValue("id_token");
 
         // Obtener los datos proporcionados por Google
         var idGoogle = identidad.FindFirst(
