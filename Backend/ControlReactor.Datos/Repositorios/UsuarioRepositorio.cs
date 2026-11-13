@@ -102,5 +102,13 @@ namespace ControlReactor.Datos.Repositorios
             return usuario;
         }
 
+        // Comprueba si el usuario ya tiene una cuenta de Google vinculada
+        public async Task<bool> TieneGoogleVinculadoAsync(int idUsuario)
+        {
+            return await _context.UsuariosLoginGoogle
+                .AnyAsync(g => g.IdUsuario == idUsuario
+                            && g.Proveedor == "Google");
+        }
+
     }
 }

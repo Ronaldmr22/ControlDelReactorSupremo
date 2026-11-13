@@ -9,17 +9,28 @@ using ControlReactor.Modelos.Entidades;
 using ControlReactor.Api.Multijugador.Networking;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Google;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using ControlReactor.Api.Autenticacion;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Autenticación con Google
+
+ // Autenticación con Google y usuarios tradicionales
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = "GoogleCookie";
         options.DefaultChallengeScheme = "Google";
     })
     .AddCookie("GoogleCookie")
+    .AddCookie("UsuarioCookie", options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromHours(2);
+    })
     .AddGoogle("Google", options =>
     {
         options.Scope.Add("email");
@@ -42,12 +53,14 @@ builder.Services.AddAuthentication(options =>
                 var valor = verificado.GetBoolean() ? "true" : "false";
 
                 context.Identity?.AddClaim(
-                    new System.Security.Claims.Claim("email_verified", valor)
+                    new Claim("email_verified", valor)
                 );
             }
+
             return Task.CompletedTask;
         };
     });
+
 
 // Servicios para registro y verificación de usuarios.
 builder.Services.AddHttpClient<ServicioValidacionCorreo>();
@@ -57,6 +70,7 @@ builder.Services.AddScoped<ServicioCodigoVerificacion>();
 builder.Services.AddScoped<ServicioVerificacionCorreo>();
 builder.Services.AddScoped<ServicioLoginUsuario>();
 builder.Services.AddScoped<ServicioLoginGoogle>();
+builder.Services.AddSingleton<ServicioCodigoLoginGoogle>();
 builder.Services.AddScoped<ServicioRecuperacionPassword>();
 
 builder.Services.AddScoped<ServicioAvatarUsuario>();
@@ -107,22 +121,151 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Iniciar autenticación con Google
-app.MapGet("/api/usuarios/login-google", () =>
-{
-    var propiedades = new AuthenticationProperties
+ // Iniciar autenticación con Google desde Unity
+app.MapGet("/api/usuarios/login-google", (
+        string idSolicitud,
+        string desafio) =>
     {
-        RedirectUri = "/api/usuarios/google-resultado"
-    };
+        // Validar el identificador de la solicitud
+        if (!Guid.TryParseExact(idSolicitud, "N", out _))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "Identificador de solicitud inválido."
+            });
+        }
 
-    return Results.Challenge(
-        propiedades,
-        authenticationSchemes: new[] { GoogleDefaults.AuthenticationScheme }
-    );
-});
+        // Validar el desafío PKCE (SHA-256 en Base64URL)
+        if (desafio.Length != 43 ||
+            desafio.Any(c =>
+                !char.IsLetterOrDigit(c) && c != '-' && c != '_'))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "Desafío de autenticación inválido."
+            });
+        }
+
+        var propiedades = new AuthenticationProperties
+        {
+            RedirectUri = "/api/usuarios/google-resultado"
+        };
+
+        // Conservar los datos durante la autenticación con Google
+        propiedades.Items["idSolicitud"] = idSolicitud;
+        propiedades.Items["desafio"] = desafio;
+
+        return Results.Challenge(
+            propiedades,
+            authenticationSchemes: new[]
+            {
+                GoogleDefaults.AuthenticationScheme
+            }
+        );
+    });
+
+
+app.MapGet("/api/usuarios/vincular-google", (
+    HttpContext contexto) =>
+    {
+        var propiedades = new AuthenticationProperties
+        {
+            RedirectUri = "/api/usuarios/google-vincular-resultado"
+        };
+
+        return Results.Challenge(
+            propiedades,
+            authenticationSchemes: new[] { "Google" }
+        );
+    })
+    .RequireAuthorization(new AuthorizeAttribute
+    {
+        AuthenticationSchemes = "UsuarioCookie"
+    });
+
+app.MapGet("/api/usuarios/google-vincular-resultado",
+    async (
+        HttpContext contexto,
+        IUsuarioRepositorio repositorio) =>
+    {
+        // Comprobar que el usuario inició sesión con contraseña
+        var sesion = await contexto.AuthenticateAsync("UsuarioCookie");
+
+        if (!sesion.Succeeded || sesion.Principal == null)
+            return Results.Unauthorized();
+
+        var idTexto = sesion.Principal
+            .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!int.TryParse(idTexto, out var idUsuario))
+            return Results.Unauthorized();
+
+        // Recuperar la identidad verificada por Google
+        var google = await contexto.AuthenticateAsync("GoogleCookie");
+
+        if (!google.Succeeded || google.Principal == null)
+            return Results.Unauthorized();
+
+        var idGoogle = google.Principal
+            .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        var correoGoogle = google.Principal
+            .FindFirst(ClaimTypes.Email)?.Value;
+
+        var correoVerificado = google.Principal
+            .FindFirst("email_verified")?.Value;
+
+        await contexto.SignOutAsync("GoogleCookie");
+
+        if (string.IsNullOrWhiteSpace(idGoogle) ||
+            string.IsNullOrWhiteSpace(correoGoogle) ||
+            correoVerificado != "true")
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "No se pudo verificar la cuenta de Google."
+            });
+        }
+
+        // Comprobar que ambos correos coincidan
+        var usuario = await repositorio.ObtenerPorIdAsync(idUsuario);
+
+        if (usuario == null ||
+            !string.Equals(
+                usuario.Correo.Trim(),
+                correoGoogle.Trim(),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "El correo de Google no coincide con el de tu cuenta."
+            });
+        }
+
+        // Evitar vinculaciones duplicadas
+        var usuarioGoogle = await repositorio.ObtenerPorGoogleAsync(idGoogle);
+
+        if (usuarioGoogle != null ||
+            await repositorio.TieneGoogleVinculadoAsync(idUsuario))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "La cuenta de Google ya está vinculada."
+            });
+        }
+
+        await repositorio.VincularGoogleAsync(idUsuario, idGoogle);
+
+        return Results.Ok(new
+        {
+            mensaje = "Cuenta de Google vinculada correctamente.",
+            idUsuario = usuario.IdUsuario,
+            nombreUsuario = usuario.NombreUsuario
+        });
+    });
 
 app.MapGet("/api/usuarios/google-resultado",
-    async (HttpContext contexto, ServicioLoginGoogle servicio) =>
+    async (HttpContext contexto, ServicioLoginGoogle servicio, ServicioCodigoLoginGoogle servicioCodigos) =>
     {
         // Recuperar la identidad autenticada
         var resultado = await contexto.AuthenticateAsync("GoogleCookie");
@@ -131,8 +274,26 @@ app.MapGet("/api/usuarios/google-resultado",
         {
             return Results.Unauthorized();
         }
-
         var identidad = resultado.Principal;
+
+        // Recuperar los datos de la solicitud iniciada desde Unity
+        string? idSolicitud = null;
+        string? desafio = null;
+
+        if (resultado.Properties != null)
+        {
+            resultado.Properties.Items.TryGetValue("idSolicitud", out idSolicitud);
+            resultado.Properties.Items.TryGetValue("desafio", out desafio);
+        }
+
+        if (string.IsNullOrWhiteSpace(idSolicitud) ||
+            string.IsNullOrWhiteSpace(desafio))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "No se encontraron los datos de autenticación de Unity."
+            });
+        }
 
         // Obtener los datos proporcionados por Google
         var idGoogle = identidad.FindFirst(
@@ -180,14 +341,49 @@ app.MapGet("/api/usuarios/google-resultado",
             });
         }
 
-        return Results.Ok(new
-        {
-            mensaje = login.Mensaje,
-            idUsuario = login.Usuario!.IdUsuario,
-            nombreUsuario = login.Usuario.NombreUsuario
-        });
+        // Generar código temporal para Unity
+        string codigo = servicioCodigos.GenerarCodigo(
+            login.Usuario!.IdUsuario,
+            idSolicitud,
+            desafio
+        );
+
+        // Redirigir el navegador hacia Unity
+        string urlUnity = "http://127.0.0.1:8765/"
+            + "?code=" + Uri.EscapeDataString(codigo);
+
+        return Results.Redirect(urlUnity);
     });
 
+app.MapPost("/api/usuarios/google-canjear", async (
+            CanjearCodigoGoogleDto dto,
+            ServicioCodigoLoginGoogle servicioCodigos,
+            IUsuarioRepositorio repositorio) =>
+        {
+            int? idUsuario = servicioCodigos.ConsumirCodigo(
+                dto.Codigo,
+                dto.IdSolicitud,
+                dto.Verificador
+            );
+
+            if (idUsuario == null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var usuario = await repositorio.ObtenerPorIdAsync(idUsuario.Value);
+
+            if (usuario == null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(new
+            {
+                idUsuario = usuario.IdUsuario,
+                nombreUsuario = usuario.NombreUsuario
+            });
+        });
 
 app.MapPost("/api/usuarios/registro", async (RegistroUsuarioDto dto,ServicioRegistroUsuario servicio) =>
 {
@@ -233,23 +429,41 @@ app.MapPost("/api/usuarios/reenviar-codigo", async (ReenviarCodigoDto datos, Ser
         ? Results.Ok(new { mensaje = resultado.Mensaje })
         : Results.BadRequest(new { mensaje = resultado.Mensaje });
 });
- // Inicio de sesión de usuarios.
+// Inicio de sesión de usuarios.
 app.MapPost("/api/usuarios/login", async (
     LoginUsuarioDto dto,
-    ServicioLoginUsuario servicio) =>
+    ServicioLoginUsuario servicio,
+    HttpContext contexto) =>
 {
     var resultado = await servicio.LoginAsync(dto);
 
     if (!resultado.Exito)
     {
-        return Results.Json(new { mensaje = resultado.Mensaje }, statusCode: 401);
+        return Results.Json(
+            new { mensaje = resultado.Mensaje },
+            statusCode: 401
+        );
     }
+
+    var usuario = resultado.Usuario!;
+
+    // Crear una identidad autenticada para el usuario.
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
+        new Claim(ClaimTypes.Name, usuario.NombreUsuario)
+    };
+
+    var identidad = new ClaimsIdentity(claims, "UsuarioCookie");
+    var principal = new ClaimsPrincipal(identidad);
+
+    await contexto.SignInAsync("UsuarioCookie", principal);
 
     return Results.Ok(new
     {
         mensaje = resultado.Mensaje,
-        idUsuario = resultado.Usuario!.IdUsuario,
-        nombreUsuario = resultado.Usuario.NombreUsuario
+        idUsuario = usuario.IdUsuario,
+        nombreUsuario = usuario.NombreUsuario
     });
 });
 
