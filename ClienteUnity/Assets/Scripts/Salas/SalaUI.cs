@@ -303,6 +303,7 @@ public class SalaUI : MonoBehaviour
         {
             0 => "mapa1", // Compatibilidad con el backend anterior.
             1 => "mapa1",
+            2 => "mapa2",
             _ => null
         };
 
