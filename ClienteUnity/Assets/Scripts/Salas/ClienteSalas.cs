@@ -295,6 +295,7 @@ public class ClienteSalas : MonoBehaviour
         solicitud.timeout = 20;
 
         yield return solicitud.SendWebRequest();
+        Debug.Log($"[GuardarMapa] {solicitud.method} {solicitud.url} | idEscenario={datos.idEscenario} | HTTP {solicitud.responseCode} | {solicitud.downloadHandler?.text}");
 
         if (solicitud.result != UnityWebRequest.Result.Success)
         {

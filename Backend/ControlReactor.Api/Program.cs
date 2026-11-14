@@ -1228,8 +1228,7 @@ app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
                 mensaje = "Solo el anfitrión puede elegir el escenario."
             }, statusCode: 403);
         }
-
-        if (idEscenario != 1)
+        if (idEscenario != 1 && idEscenario != 2 && idEscenario != 3)
         {
             return Results.BadRequest(new
             {
