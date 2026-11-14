@@ -105,6 +105,13 @@ public sealed class ConnectionGroupManager
                 return false;
             }
 
+            // Impedir movimientos mientras el jugador esté congelado.
+            if (connection.EstaCongelado())
+            {
+                return false;
+            }
+
+
             // Comprobar que la posicion realmente cambió.
             if (connection.X == x && connection.Y == y)
             {
@@ -159,6 +166,65 @@ public sealed class ConnectionGroupManager
             {
                 _groups.Remove(removedRoomCode);
             }
+
+            return true;
+        }
+    }
+    public List<ClientConnection> ObtenerJugadoresDisponibles(
+        string codigoSala)
+    {
+        lock (_sync)
+        {
+            if (string.IsNullOrWhiteSpace(codigoSala))
+            {
+                return new List<ClientConnection>();
+            }
+
+            string codigo = codigoSala.Trim().ToUpperInvariant();
+
+            if (!_groups.TryGetValue(codigo, out var grupo))
+            {
+                return new List<ClientConnection>();
+            }
+
+            return grupo.Connections.Values
+                .Where(jugador =>
+                    jugador.IdJugadorPartida.HasValue &&
+                    !jugador.EstaCongelado())
+                .ToList();
+        }
+    }
+
+    public bool CongelarJugador(
+        string codigoSala,
+        string playerId)
+    {
+        lock (_sync)
+        {
+            if (string.IsNullOrWhiteSpace(codigoSala))
+            {
+                return false;
+            }
+
+            string codigo = codigoSala.Trim().ToUpperInvariant();
+
+            if (!_groups.TryGetValue(codigo, out var grupo))
+            {
+                return false;
+            }
+
+            if (!grupo.Connections.TryGetValue(
+                playerId, out var jugador))
+            {
+                return false;
+            }
+
+            if (jugador.EstaCongelado())
+            {
+                return false;
+            }
+
+            jugador.CongeladoHasta = DateTime.UtcNow.AddSeconds(3);
 
             return true;
         }

@@ -151,6 +151,9 @@ public sealed class WebSocketHandler
             case "action":
                 await RelayActionAsync(connection);
                 break;
+            case "configure_guardians":
+                await ConfigureGuardiansAsync(connection, message);
+                break;
 
             default:
                 await SendErrorAsync(
@@ -158,6 +161,35 @@ public sealed class WebSocketHandler
                     "Tipo de mensaje desconocido.");
                 break;
         }
+    }
+    private async Task ConfigureGuardiansAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(connection.RoomCode))
+        {
+            await SendErrorAsync(
+                connection,
+                "Debes pertenecer a una sala para configurar guardianes.");
+
+            return;
+        }
+
+        if (message.PosicionesGuardianes == null ||
+            message.PosicionesGuardianes.Count != 4)
+        {
+            await SendErrorAsync(
+                connection,
+                "Se necesitan exactamente cuatro posiciones.");
+
+            return;
+        }
+
+        // Pendiente: validar el escenario y la autorización.
+        // Todavía no creamos los guardianes.
+        await SendErrorAsync(
+            connection,
+            "La configuración de guardianes aún no está habilitada.");
     }
 
     private async Task SubscribeToRoomAsync(
@@ -341,25 +373,6 @@ public sealed class WebSocketHandler
                 connection,
                 "No se pudo registrar el movimiento.");
             return;
-        }
-        // Mensaje con el puntaje actualizado.
-        var mensajePuntaje = new ServerMessage
-        {
-            Type = "score_updated",
-            RoomCode = connection.RoomCode,
-            PlayerId = connection.PlayerId,
-            IdUsuario = connection.IdUsuario,
-            IdJugadorPartida = connection.IdJugadorPartida.Value,
-            Puntaje = nuevoPuntaje.Value
-        };
-
-        // Enviar el puntaje al jugador que se movió.
-        await connection.SendAsync(mensajePuntaje);
-
-        // Enviar el puntaje a los demás jugadores de la sala.
-        foreach (var recipient in recipients)
-        {
-            await recipient.SendAsync(mensajePuntaje);
         }
 
         var movementMessage = new ServerMessage

@@ -28,6 +28,7 @@ public sealed class ClientConnection
     public float X { get; set; }
 
     public float Y { get; set; }
+    public DateTime? CongeladoHasta { get; set; }
 
     public ClientConnection(WebSocket socket, string playerId)
     {
@@ -73,5 +74,9 @@ public sealed class ClientConnection
         {
             _sendLock.Release();
         }
+    }
+    public bool EstaCongelado()
+    {
+        return CongeladoHasta.HasValue && DateTime.UtcNow < CongeladoHasta.Value;
     }
 }

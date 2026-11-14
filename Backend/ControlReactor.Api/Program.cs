@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.Google;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using ControlReactor.Api.Autenticacion;
+using ControlReactor.Negocio.Guardianes;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -105,6 +106,9 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
+
+// Servicios de administración de guardianes por sala
+builder.Services.AddSingleton<AdministradorGuardianesPorSala>();
 
 // Registrar servicios de autorización
 builder.Services.AddAuthorization();
