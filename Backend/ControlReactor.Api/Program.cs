@@ -891,7 +891,9 @@ app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
             }, statusCode: 403);
         }
 
-        if (idEscenario != 1)
+        if (datos.IdEscenario.HasValue &&
+        datos.IdEscenario.Value != 1 &&
+        datos.IdEscenario.Value != 2)
         {
             return Results.BadRequest(new
             {
