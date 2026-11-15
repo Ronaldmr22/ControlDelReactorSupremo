@@ -7,6 +7,7 @@ using ControlReactor.Api.Multijugador.Protocol;
 using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 using ControlReactor.Negocio.Servicios;
+using ControlReactor.Negocio.Guardianes;
 
 
 
@@ -21,7 +22,9 @@ public sealed class WebSocketHandler
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
-    public WebSocketHandler(ConnectionGroupManager groupManager, IServiceScopeFactory scopeFactory)
+    public WebSocketHandler(
+        ConnectionGroupManager groupManager,
+        IServiceScopeFactory scopeFactory)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
@@ -144,20 +147,50 @@ public sealed class WebSocketHandler
             case "subscribe_room":
                 await SubscribeToRoomAsync(connection, message);
                 break;
-
             case "move":
                 await RelayMovementAsync(connection, message);
                 break;
             case "action":
                 await RelayActionAsync(connection);
                 break;
-
+            case "configure_guardians":
+                await ConfigureGuardiansAsync(connection, message);
+                break;
             default:
                 await SendErrorAsync(
                     connection,
                     "Tipo de mensaje desconocido.");
                 break;
         }
+    }
+    private async Task ConfigureGuardiansAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(connection.RoomCode))
+        {
+            await SendErrorAsync(
+                connection,
+                "Debes pertenecer a una sala para configurar guardianes.");
+
+            return;
+        }
+
+        if (message.PosicionesGuardianes == null ||
+            message.PosicionesGuardianes.Count != 4)
+        {
+            await SendErrorAsync(
+                connection,
+                "Se necesitan exactamente cuatro posiciones.");
+
+            return;
+        }
+
+        // Pendiente: validar el escenario y la autorización.
+        // Todavía no creamos los guardianes.
+        await SendErrorAsync(
+            connection,
+            "La configuración de guardianes aún no está habilitada.");
     }
 
     private async Task SubscribeToRoomAsync(
@@ -325,41 +358,6 @@ public sealed class WebSocketHandler
         {
             // Ignorar movimientos repetidos o no aceptados.
             return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-
-        var servicioPuntuacion = scope.ServiceProvider
-            .GetRequiredService<ServicioPuntuacion>();
-
-        int? nuevoPuntaje = await servicioPuntuacion.RegistrarMovimiento(
-            connection.IdJugadorPartida.Value);
-
-        if (!nuevoPuntaje.HasValue)
-        {
-            await SendErrorAsync(
-                connection,
-                "No se pudo registrar el movimiento.");
-            return;
-        }
-        // Mensaje con el puntaje actualizado.
-        var mensajePuntaje = new ServerMessage
-        {
-            Type = "score_updated",
-            RoomCode = connection.RoomCode,
-            PlayerId = connection.PlayerId,
-            IdUsuario = connection.IdUsuario,
-            IdJugadorPartida = connection.IdJugadorPartida.Value,
-            Puntaje = nuevoPuntaje.Value
-        };
-
-        // Enviar el puntaje al jugador que se movió.
-        await connection.SendAsync(mensajePuntaje);
-
-        // Enviar el puntaje a los demás jugadores de la sala.
-        foreach (var recipient in recipients)
-        {
-            await recipient.SendAsync(mensajePuntaje);
         }
 
         var movementMessage = new ServerMessage

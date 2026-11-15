@@ -21,4 +21,10 @@
     <ProjectReference Include="..\ControlReactor.Datos\ControlReactor.Datos.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Update="Mapas\ColisionesMapa*.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

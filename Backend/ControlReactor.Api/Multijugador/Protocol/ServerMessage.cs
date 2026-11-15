@@ -1,4 +1,4 @@
-﻿
+
 using ControlReactor.Api.Multijugador.Players;
 
 namespace ControlReactor.Api.Multijugador.Protocol;
@@ -26,9 +26,12 @@ public class ServerMessage
     public int? IdUsuario { get; set; }
 
     public int? Puntaje { get; set; }
+    public int? GuardianId { get; set; }
 
     // Clasificación final de todos los participantes.
     public List<ResultadoJugador>? Resultados { get; set; }
+    // Posiciones actuales de los guardianes.
+    public List<PosicionGuardianServidor>? Guardians { get; set; }
 }
 
 public class ResultadoJugador
@@ -43,3 +46,11 @@ public class ResultadoJugador
 
     public bool EsGanador { get; set; }
 }
+
+public class PosicionGuardianServidor
+{
+    public int Id { get; set; }
+    public float X { get; set; }
+    public float Y { get; set; }
+}
+
