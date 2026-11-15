@@ -7096,6 +7096,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1936970027}
   - component: {fileID: 1936970028}
+  - component: {fileID: 1936970029}
   m_Layer: 0
   m_Name: ZonaInteraccion
   m_TagString: Untagged
@@ -7154,6 +7155,20 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 1.5
+--- !u!114 &1936970029
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1936970026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 222b248463e52204993b862030657a68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZonaInteraccionReactor
+  generador: {fileID: 22930738}
+  reactor: {fileID: 1854355527}
 --- !u!1 &1976689627
 GameObject:
   m_ObjectHideFlags: 0
@@ -7496,9 +7511,9 @@ SceneRoots:
   - {fileID: 2052556921}
   - {fileID: 80352499}
   - {fileID: 711198118}
+  - {fileID: 1854355526}
   - {fileID: 464542370}
   - {fileID: 22930737}
   - {fileID: 454095669}
   - {fileID: 1710576233}
   - {fileID: 713269034}
-  - {fileID: 1854355526}
