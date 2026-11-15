@@ -1,10 +1,11 @@
 using System;
+using ControlReactor.Negocio.Guardianes.Colisiones;
 
 namespace ControlReactor.Negocio.Guardianes
 {
     public class EstadoPersecucion : IEstadoGuardian
     {
-        private const float Velocidad = 2.5f;
+        private const float Velocidad = 1.5f;
 
         public float ObjetivoX { get; set; }
         public float ObjetivoY { get; set; }
@@ -14,12 +15,13 @@ namespace ControlReactor.Negocio.Guardianes
             float diferenciaX = ObjetivoX - guardian.X;
             float diferenciaY = ObjetivoY - guardian.Y;
 
-            float distancia = guardian.CalcularDistancia(ObjetivoX, ObjetivoY);
+            float distancia = guardian.CalcularDistancia(
+                ObjetivoX,
+                ObjetivoY
+            );
 
             if (distancia <= 0.01f)
-            {
                 return;
-            }
 
             float desplazamiento = MathF.Min(
                 Velocidad * deltaTiempo,

@@ -13,7 +13,7 @@ namespace ControlReactor.Negocio.Guardianes
             Id = id;
             X = x;
             Y = y;
-            EstadoActual = new EstadoPatrulla();
+            EstadoActual = new EstadoPatrulla(x, y);
         }
 
         public void CambiarEstado(IEstadoGuardian nuevoEstado)
@@ -23,7 +23,11 @@ namespace ControlReactor.Negocio.Guardianes
 
         public void Actualizar(float deltaTiempo)
         {
+            // Actualizar el movimiento según el estado del guardián.
             EstadoActual?.Actualizar(this, deltaTiempo);
+
+            // Evitar que el guardián salga de los límites del mapa.
+            LimitesGuardianes.AplicarLimites(this);
         }
         public float CalcularDistancia(float x, float y)
         {

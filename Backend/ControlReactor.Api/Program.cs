@@ -13,6 +13,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using ControlReactor.Api.Autenticacion;
 using ControlReactor.Negocio.Guardianes;
+using ControlReactor.Negocio.Guardianes.Colisiones;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -108,12 +109,72 @@ builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
 
 // Servicios de administración de guardianes por sala
-builder.Services.AddSingleton<AdministradorGuardianesPorSala>();
+builder.Services.AddSingleton<AdministradorGuardianesPorSala>(sp =>
+{
+    var entorno = sp.GetRequiredService<IWebHostEnvironment>();
+
+    string rutaMapas = Path.Combine(
+        entorno.ContentRootPath,
+        "Mapas"
+    );
+
+    return new AdministradorGuardianesPorSala(rutaMapas);
+});
+
+builder.Services.AddHostedService<MonitorGuardianes>();
 
 // Registrar servicios de autorización
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
+
+
+// PRUEBA TEMPORAL: cargar las colisiones del mapa 1.
+try
+{
+    string rutaColisiones = Path.Combine(
+        app.Environment.ContentRootPath,
+        "Mapas",
+        "ColisionesMapa1.json"
+    );
+
+    DatosColisionesMapa mapa =
+        CargadorColisionesMapa.Cargar(rutaColisiones);
+
+    
+    bool pruebaPared = DetectorColisionesMapa.PuntoEnObstaculo(
+        -13.7f,
+        -0.8f,
+        mapa
+    );
+
+    bool pruebaLibre = DetectorColisionesMapa.PuntoEnObstaculo(
+        -13.7f,
+        -5.0f,
+        mapa
+    );
+
+    Console.WriteLine(
+        $"Prueba dentro de pared: {pruebaPared}"
+    );
+
+    Console.WriteLine(
+        $"Prueba en zona libre: {pruebaLibre}"
+    );
+
+
+    Console.WriteLine(
+        $"Mapa {mapa.IdEscenario}: se cargaron " +
+        $"{mapa.Obstaculos.Count} polígonos de colisión."
+    );
+}
+catch (Exception ex)
+{
+    Console.WriteLine(
+        $"ERROR al cargar las colisiones: {ex.Message}"
+    );
+}
+
 
 app.UseWebSockets();
 app.UseAuthentication();
@@ -493,28 +554,6 @@ app.MapGet("/api/puntuacion/{idJugadorPartida:int}", async (
         idUsuario = jugador.IdUsuario,
         idPartida = jugador.IdPartida,
         puntaje = jugador.Puntaje
-    });
-});
-
-// Registra un movimiento y suma un punto al participante.
-app.MapPost("/api/puntuacion/movimiento/{idJugadorPartida:int}", async (
-    int idJugadorPartida,
-    ServicioPuntuacion servicio) =>
-{
-    var puntaje = await servicio.RegistrarMovimiento(idJugadorPartida);
-
-    if (puntaje == null)
-    {
-        return Results.BadRequest(new
-        {
-            mensaje = "El participante no existe o la partida no está activa."
-        });
-    }
-
-    return Results.Ok(new
-    {
-        mensaje = "Movimiento registrado correctamente.",
-        puntaje = puntaje.Value
     });
 });
 

@@ -7,6 +7,7 @@ using ControlReactor.Api.Multijugador.Protocol;
 using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 using ControlReactor.Negocio.Servicios;
+using ControlReactor.Negocio.Guardianes;
 
 
 
@@ -21,7 +22,9 @@ public sealed class WebSocketHandler
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
-    public WebSocketHandler(ConnectionGroupManager groupManager, IServiceScopeFactory scopeFactory)
+    public WebSocketHandler(
+        ConnectionGroupManager groupManager,
+        IServiceScopeFactory scopeFactory)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
@@ -144,7 +147,6 @@ public sealed class WebSocketHandler
             case "subscribe_room":
                 await SubscribeToRoomAsync(connection, message);
                 break;
-
             case "move":
                 await RelayMovementAsync(connection, message);
                 break;
@@ -154,7 +156,6 @@ public sealed class WebSocketHandler
             case "configure_guardians":
                 await ConfigureGuardiansAsync(connection, message);
                 break;
-
             default:
                 await SendErrorAsync(
                     connection,
@@ -356,22 +357,6 @@ public sealed class WebSocketHandler
         if (!success || player is null)
         {
             // Ignorar movimientos repetidos o no aceptados.
-            return;
-        }
-
-        using var scope = _scopeFactory.CreateScope();
-
-        var servicioPuntuacion = scope.ServiceProvider
-            .GetRequiredService<ServicioPuntuacion>();
-
-        int? nuevoPuntaje = await servicioPuntuacion.RegistrarMovimiento(
-            connection.IdJugadorPartida.Value);
-
-        if (!nuevoPuntaje.HasValue)
-        {
-            await SendErrorAsync(
-                connection,
-                "No se pudo registrar el movimiento.");
             return;
         }
 

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json;
 using ControlReactor.Api.Multijugador.Players;
 using ControlReactor.Api.Multijugador.Protocol;
+using System.Diagnostics;
 
 namespace ControlReactor.Api.Multijugador.Networking;
 
@@ -29,6 +30,7 @@ public sealed class ClientConnection
 
     public float Y { get; set; }
     public DateTime? CongeladoHasta { get; set; }
+    public DateTime UltimaActualizacionPosicion { get; set; } = DateTime.MinValue;
 
     public ClientConnection(WebSocket socket, string playerId)
     {
@@ -49,7 +51,11 @@ public sealed class ClientConnection
 
     public async Task SendAsync(ServerMessage message)
     {
+        var reloj = Stopwatch.StartNew();
+
         await _sendLock.WaitAsync();
+
+        long esperaLock = reloj.ElapsedMilliseconds;
 
         try
         {
@@ -69,6 +75,21 @@ public sealed class ClientConnection
                 true,
                 CancellationToken.None
             );
+
+            long tiempoTotal = reloj.ElapsedMilliseconds;
+
+            // Registrar únicamente los mensajes importantes
+            // o los envíos que tardan demasiado.
+            if (message.Type == "player_frozen" ||
+                tiempoTotal > 200)
+            {
+                Console.WriteLine(
+                    $"ENVIO WEBSOCKET | " +
+                    $"Tipo: {message.Type} | " +
+                    $"Espera lock: {esperaLock} ms | " +
+                    $"Tiempo total: {tiempoTotal} ms"
+                );
+            }
         }
         finally
         {

@@ -1,6 +1,4 @@
-﻿
 using ControlReactor.Api.Multijugador.Players;
-
 namespace ControlReactor.Api.Multijugador.Networking;
 
 public sealed class ConnectionGroupManager
@@ -115,11 +113,17 @@ public sealed class ConnectionGroupManager
             // Comprobar que la posicion realmente cambió.
             if (connection.X == x && connection.Y == y)
             {
+                connection.UltimaActualizacionPosicion = DateTime.UtcNow;
                 return false;
             }
 
             connection.X = x;
             connection.Y = y;
+            connection.UltimaActualizacionPosicion = DateTime.UtcNow;
+            Console.WriteLine(
+                $"POSICION RECIBIDA BACKEND: " +
+                $"X={connection.X:F2}, Y={connection.Y:F2}"
+            );
 
             updatedPlayer = connection.ToPlayerState();
 
@@ -187,11 +191,30 @@ public sealed class ConnectionGroupManager
                 return new List<ClientConnection>();
             }
 
+            Console.WriteLine(
+                $"Sala {codigo}: conexiones registradas = {grupo.Connections.Count}"
+            );
+
+            foreach (var jugador in grupo.Connections.Values)
+            {
+                Console.WriteLine(
+                    $"Jugador {jugador.PlayerId} | " +
+                    $"IdJugadorPartida: {jugador.IdJugadorPartida} | " +
+                    $"Congelado: {jugador.EstaCongelado()}"
+                );
+            }
+
+            DateTime ahora = DateTime.UtcNow;
+
             return grupo.Connections.Values
                 .Where(jugador =>
                     jugador.IdJugadorPartida.HasValue &&
-                    !jugador.EstaCongelado())
+                    !jugador.EstaCongelado() &&
+                    (ahora - jugador.UltimaActualizacionPosicion)
+                        .TotalSeconds <= 1.0)
                 .ToList();
+
+            
         }
     }
 
@@ -224,7 +247,7 @@ public sealed class ConnectionGroupManager
                 return false;
             }
 
-            jugador.CongeladoHasta = DateTime.UtcNow.AddSeconds(3);
+            jugador.CongeladoHasta = DateTime.UtcNow.AddSeconds(2);
 
             return true;
         }
@@ -249,5 +272,44 @@ public sealed class ConnectionGroupManager
             return group.Connections.Values.ToList();
         }
     }
+
+    public bool ObtenerPosicionJugador(
+        string codigoSala,
+        string playerId,
+        out float x,
+        out float y)
+    {
+        lock (_sync)
+        {
+            x = 0;
+            y = 0;
+
+            if (string.IsNullOrWhiteSpace(codigoSala))
+                return false;
+
+            string codigo = codigoSala.Trim().ToUpperInvariant();
+
+            if (!_groups.TryGetValue(codigo, out var grupo))
+                return false;
+
+            if (!grupo.Connections.TryGetValue(
+                playerId, out var jugador))
+                return false;
+
+            if (jugador.EstaCongelado())
+                return false;
+
+            // No aceptar posiciones demasiado antiguas.
+            if ((DateTime.UtcNow -
+                jugador.UltimaActualizacionPosicion).TotalSeconds > 1.0)
+                return false;
+
+            x = jugador.X;
+            y = jugador.Y;
+
+            return true;
+        }
+    }
+
 
 }

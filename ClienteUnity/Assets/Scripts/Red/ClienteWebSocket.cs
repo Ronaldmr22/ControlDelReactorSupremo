@@ -78,8 +78,11 @@ public class ClienteWebSocket : MonoBehaviour
         {
             string mensaje = System.Text.Encoding.UTF8.GetString(bytes);
 
-            if (!mensaje.Contains("\"type\":\"player_moved\""))
+            if (!mensaje.Contains("\"type\":\"player_moved\"") &&
+                !mensaje.Contains("\"type\":\"guardians_updated\""))
+            {
                 Debug.Log("Mensaje recibido: " + mensaje);
+            }
 
             try
             {

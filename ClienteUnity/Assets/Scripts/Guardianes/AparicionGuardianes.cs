@@ -15,4 +15,19 @@ public class PuntosAparicionGuardianes : MonoBehaviour
 
         return posiciones;
     }
+
+    [ContextMenu("Mostrar posiciones de guardianes")]
+    public void MostrarPosiciones()
+    {
+        Vector2[] posiciones = ObtenerPosiciones();
+
+        for (int i = 0; i < posiciones.Length; i++)
+        {
+            Debug.Log(
+                $"Guardián {i + 1}: " +
+                $"X = {posiciones[i].x}, " +
+                $"Y = {posiciones[i].y}"
+            );
+        }
+    }
 }

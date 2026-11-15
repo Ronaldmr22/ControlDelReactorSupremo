@@ -295,8 +295,8 @@ namespace ControlReactor.Datos.Repositorios
                     j.UltimaActividadUtc.HasValue &&
                     j.UltimaActividadUtc.Value >= limite);
 
-            if (participantesActivos < 2)
-                return (false, "Se necesitan al menos 2 jugadores para iniciar.");
+            if (participantesActivos < 1)
+                return (false, "Se necesitan al menos 1 jugador para iniciar.");
 
             // Verificamos que el creador siga activo.
             var creadorActivo = await _context.JugadoresPartida
