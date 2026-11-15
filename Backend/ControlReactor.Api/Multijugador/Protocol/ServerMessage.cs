@@ -6,6 +6,8 @@ namespace ControlReactor.Api.Multijugador.Protocol;
 public class ServerMessage
 {
     public string Type { get; set; } = string.Empty;
+    public bool? SolicitarCierrePuertas { get; set; }
+    public int[]? PuertasCerradas { get; set; }
 
     public string? Message { get; set; }
 
