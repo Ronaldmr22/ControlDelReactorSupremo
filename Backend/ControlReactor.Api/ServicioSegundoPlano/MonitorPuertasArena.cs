@@ -43,6 +43,7 @@ public sealed class MonitorPuertasArena : BackgroundService
                     foreach (var partida in partidas)
                     {
                         int id = partida.IdPartida;
+                        var zonas = ZonasPuertasArena.ObtenerPorEscenario(partida.IdEscenario);
                         activas.Add(id);
 
                         if (!_ciclos.TryGetValue(id, out var ciclo))
@@ -71,13 +72,13 @@ public sealed class MonitorPuertasArena : BackgroundService
 
                             var conexiones = _groupManager.ObtenerConexionesSala(codigoSala);
 
-                            if (cerrar && partida.IdEscenario == 1)
+                            if (cerrar && zonas.Count > 0)
                             {
                                 _logger.LogInformation(
                                 "[Puertas] Sala {Sala}: posiciones al cerrar: {Posiciones}",
                                 codigoSala,
                                 string.Join(" | ", conexiones.Select(j => $"X={j.X:F3}, Y={j.Y:F3}")));
-                                var ocupadas = ZonasPuertasArena.Mapa1
+                                var ocupadas = zonas
                                     .Where(zona => conexiones.Any(j => zona.OcupadaPorJugador(j.X, j.Y)))
                                     .Select(zona => zona.Id)
                                     .ToArray();
@@ -95,10 +96,10 @@ public sealed class MonitorPuertasArena : BackgroundService
                             }
                         }
 
-                        if (partida.IdEscenario == 1 && !string.IsNullOrWhiteSpace(partida.CodigoSala))
+                        if (zonas.Count > 0 && !string.IsNullOrWhiteSpace(partida.CodigoSala))
                         {
                             var clientesMapa1 = _groupManager.ObtenerConexionesSala(partida.CodigoSala);
-                            var cerradas = ciclo.ActualizarPuertasMapa1(zona =>
+                            var cerradas = ciclo.ActualizarPuertas(zonas, zona =>
                                 clientesMapa1.Any(j => zona.OcupadaPorJugador(j.X, j.Y)));
 
                             var estadoPuertas = new ServerMessage

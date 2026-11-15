@@ -30,15 +30,16 @@ internal sealed class CicloPuertasArena
 
     private readonly System.Collections.Generic.HashSet<int> puertasCerradas = new();
 
-    public int[] ActualizarPuertasMapa1(Func<ZonaPuerta, bool> estaOcupada)
+    public int[] ActualizarPuertas(
+        System.Collections.Generic.IReadOnlyList<ZonaPuerta> zonas,
+        Func<ZonaPuerta, bool> estaOcupada)
     {
         if (!solicitarCierre)
         {
             puertasCerradas.Clear();
             return Array.Empty<int>();
         }
-
-        foreach (var zona in ZonasPuertasArena.Mapa1)
+        foreach (var zona in zonas)
         {
             if (!puertasCerradas.Contains(zona.Id) && !estaOcupada(zona))
                 puertasCerradas.Add(zona.Id);
