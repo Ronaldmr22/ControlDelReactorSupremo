@@ -1,13 +1,26 @@
 
+using System;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
 public class ZonaInteraccionReactor : MonoBehaviour
 {
+    [Header("Referencias")]
     [SerializeField] private GeneradorJugadores generador;
     [SerializeField] private ReactorCentral reactor;
+    [SerializeField] private ClienteWebSocket cliente;
 
     private MovimientoJugador jugadorEnZona;
+    private bool extrayendo;
+    private string idExtraccion;
+
+    [Serializable]
+    private class MensajeExtraccion
+    {
+        public string type;
+        public string reactorId;
+        public string extractionId;
+    }
 
     private void Awake()
     {
@@ -25,16 +38,15 @@ public class ZonaInteraccionReactor : MonoBehaviour
         MovimientoJugador jugador =
             otro.GetComponentInParent<MovimientoJugador>();
 
-        // Solo permitimos la interacción del jugador local.
         if (jugador == null ||
             jugador.transform != generador.JugadorLocal ||
             jugadorEnZona != null)
             return;
 
         jugadorEnZona = jugador;
-        jugadorEnZona.AccionEjecutada += IntentarExtraer;
 
-        Debug.Log("Jugador dentro de la zona del reactor.");
+        jugadorEnZona.AccionEjecutada += IniciarExtraccion;
+        jugadorEnZona.AccionFinalizada += DetenerExtraccion;
     }
 
     private void OnTriggerExit2D(Collider2D otro)
@@ -42,28 +54,64 @@ public class ZonaInteraccionReactor : MonoBehaviour
         MovimientoJugador jugador =
             otro.GetComponentInParent<MovimientoJugador>();
 
-        if (jugador == jugadorEnZona)
-            DesvincularJugador();
-    }
-
-    private void IntentarExtraer()
-    {
-        if (reactor == null)
+        if (jugador != jugadorEnZona)
             return;
 
-        if (!reactor.Disponible)
+        DetenerExtraccion();
+        DesvincularJugador();
+    }
+
+    private void IniciarExtraccion()
+    {
+        if (extrayendo || reactor == null || !reactor.Disponible)
+            return;
+
+        if (cliente == null || !cliente.EstaConectado)
         {
-            Debug.Log("El reactor no tiene energía disponible.");
+            Debug.LogWarning("No hay conexion con el servidor.");
             return;
         }
 
-        Debug.Log("US-18: solicitud de extracción detectada.");
+        extrayendo = true;
+        idExtraccion = Guid.NewGuid().ToString("N");
 
-        // Próximo paso: enviar la solicitud al servidor.
+        EnviarMensajeExtraccion("extract_start");
+
+        Debug.Log("Solicitud de inicio de extraccion enviada.");
+    }
+
+    private void DetenerExtraccion()
+    {
+        if (!extrayendo)
+            return;
+
+        extrayendo = false;
+
+        EnviarMensajeExtraccion("extract_stop");
+
+        idExtraccion = null;
+
+        Debug.Log("Solicitud de fin de extraccion enviada.");
+    }
+
+    private void EnviarMensajeExtraccion(string tipo)
+    {
+        if (cliente == null || !cliente.EstaConectado)
+            return;
+
+        MensajeExtraccion mensaje = new MensajeExtraccion
+        {
+            type = tipo,
+            reactorId = "central",
+            extractionId = idExtraccion
+        };
+
+        cliente.EnviarMensaje(JsonUtility.ToJson(mensaje));
     }
 
     private void OnDisable()
     {
+        DetenerExtraccion();
         DesvincularJugador();
     }
 
@@ -72,7 +120,9 @@ public class ZonaInteraccionReactor : MonoBehaviour
         if (jugadorEnZona == null)
             return;
 
-        jugadorEnZona.AccionEjecutada -= IntentarExtraer;
+        jugadorEnZona.AccionEjecutada -= IniciarExtraccion;
+        jugadorEnZona.AccionFinalizada -= DetenerExtraccion;
+
         jugadorEnZona = null;
     }
 }
