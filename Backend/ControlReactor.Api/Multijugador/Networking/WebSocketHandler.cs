@@ -148,6 +148,14 @@ public sealed class WebSocketHandler
             case "move":
                 await RelayMovementAsync(connection, message);
                 break;
+
+            case "extract_start":
+                await RecibirInicioExtraccionAsync(connection, message);
+                break;
+
+            case "extract_stop":
+                await RecibirFinExtraccionAsync(connection, message);
+                break;
             default:
                 await SendErrorAsync(
                     connection,
@@ -383,4 +391,112 @@ public sealed class WebSocketHandler
             Message = message
         });
     }
+
+    private async Task RecibirInicioExtraccionAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        // Validar que la solicitud tenga identificadores correctos.
+        if (message.ReactorId != "central" ||
+            !Guid.TryParseExact(message.ExtractionId, "N", out _))
+        {
+            await SendErrorAsync(
+                connection, "Solicitud de extraccion invalida.");
+            return;
+        }
+
+        // Comprobar que el jugador este vinculado a una sala.
+        if (connection.RoomCode is not string codigoSala ||
+            connection.IdUsuario is not int idUsuario ||
+            connection.IdJugadorPartida is not int idJugadorPartida)
+        {
+            await SendErrorAsync(
+                connection, "El jugador no esta identificado.");
+            return;
+        }
+
+        var conexiones = _groupManager.ObtenerConexionesSala(codigoSala);
+
+        if (!conexiones.Any(c => ReferenceEquals(c, connection)))
+        {
+            await SendErrorAsync(
+                connection, "El jugador no esta conectado a la sala.");
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+
+        var db = scope.ServiceProvider
+            .GetRequiredService<ControlReactorDbContext>();
+
+        // Verificar la partida.
+        var partida = await db.Partidas
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.CodigoSala == codigoSala);
+
+        if (partida == null || partida.Estado != "EN_CURSO")
+        {
+            await SendErrorAsync(
+                connection, "La partida no esta en curso.");
+            return;
+        }
+
+        // Confirmar la participacion del jugador.
+        bool pertenece = await db.JugadoresPartida
+            .AsNoTracking()
+            .AnyAsync(j =>
+                j.IdJugadorPartida == idJugadorPartida &&
+                j.IdUsuario == idUsuario &&
+                j.IdPartida == partida.IdPartida &&
+                j.EnSala);
+
+        if (!pertenece)
+        {
+            await SendErrorAsync(
+                connection, "El jugador no pertenece a la partida.");
+            return;
+        }
+
+        // La solicitud paso las comprobaciones iniciales.
+        // TODAVIA NO SE AUTORIZA LA EXTRACCION.
+        // Faltan distancia, energia y control de duplicados.
+
+        await connection.SendAsync(new ServerMessage
+        {
+            Type = "extract_received",
+            Message = "Solicitud recibida. Validacion pendiente."
+        });
+    }
+
+
+    private async Task RecibirFinExtraccionAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (connection.RoomCode == null ||
+            connection.IdJugadorPartida == null)
+        {
+            await SendErrorAsync(
+                connection, "El jugador no esta identificado.");
+            return;
+        }
+
+        if (message.ReactorId != "central" ||
+            !Guid.TryParseExact(message.ExtractionId, "N", out _))
+        {
+            await SendErrorAsync(
+                connection, "Identificador de extraccion invalido.");
+            return;
+        }
+
+        // Por ahora solo reconocemos la solicitud.
+        // En el siguiente paso detendremos la sesion activa.
+
+        await connection.SendAsync(new ServerMessage
+        {
+            Type = "extract_stop_received",
+            Message = "Fin de extraccion recibido."
+        });
+    }
+
 }
