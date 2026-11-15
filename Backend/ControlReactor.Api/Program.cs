@@ -104,6 +104,7 @@ builder.Services.AddDbContext<ControlReactorDbContext>(options =>options.UseNpgs
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ConnectionGroupManager>();
+builder.Services.AddSingleton<ExtractionSessionManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
 
 // Registrar servicios de autorización

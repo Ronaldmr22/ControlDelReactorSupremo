@@ -1,4 +1,5 @@
-﻿using ControlReactor.Api.Multijugador.Networking;
+﻿using System.Diagnostics;
+using ControlReactor.Api.Multijugador.Networking;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -21,10 +22,13 @@ public sealed class WebSocketHandler
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
-    public WebSocketHandler(ConnectionGroupManager groupManager, IServiceScopeFactory scopeFactory)
+    private readonly ExtractionSessionManager _extractionManager;
+
+    public WebSocketHandler(ConnectionGroupManager groupManager, IServiceScopeFactory scopeFactory, ExtractionSessionManager extractionManager)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
+        _extractionManager = extractionManager;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -349,9 +353,12 @@ public sealed class WebSocketHandler
         }
     }
 
+
     private async Task RemoveConnectionAsync(
         ClientConnection connection)
     {
+        _extractionManager.StopAll(connection);
+
         bool removed = _groupManager.RemovePlayer(
             connection,
             out PlayerState? player,
@@ -375,12 +382,13 @@ public sealed class WebSocketHandler
             {
                 await recipient.SendAsync(leaveMessage);
             }
-            catch (WebSocketException)
+            catch (WebSocketException ex)
             {
-                // Una conexion restante tambien puede haberse cerrado.
+                Debug.WriteLine($"Error al notificar la desconexión del jugador: {ex.Message}");
             }
         }
     }
+
 
     private static Task SendErrorAsync(
         ClientConnection connection,
@@ -486,10 +494,30 @@ public sealed class WebSocketHandler
             return;
         }
 
+
+        var result = _extractionManager.TryStart(
+            connection,
+            message.ExtractionId!
+        );
+
+        if (result == ExtractionStartResult.Duplicate)
+        {
+            await SendErrorAsync(
+                connection, "Solicitud de extracción duplicada.");
+            return;
+        }
+
+        if (result == ExtractionStartResult.AlreadyActive)
+        {
+            await SendErrorAsync(
+                connection, "Ya existe una extracción activa.");
+            return;
+        }
+
         await connection.SendAsync(new ServerMessage
         {
-            Type = "extract_received",
-            Message = "Solicitud recibida. Validación pendiente."
+            Type = "extract_started",
+            Message = "Inicio de extracción registrado."
         });
     }
 
@@ -514,10 +542,25 @@ public sealed class WebSocketHandler
             return;
         }
 
+
+        bool stopped = _extractionManager.TryStop(
+            connection,
+            message.ExtractionId!
+        );
+
+        if (!stopped)
+        {
+            await SendErrorAsync(
+                connection,
+                "No existe una extracción activa con ese identificador.");
+            return;
+        }
+
         await connection.SendAsync(new ServerMessage
         {
-            Type = "extract_stop_received",
-            Message = "Fin de extracción recibido."
+            Type = "extract_stopped",
+            Message = "Extracción detenida."
         });
+
     }
 }
