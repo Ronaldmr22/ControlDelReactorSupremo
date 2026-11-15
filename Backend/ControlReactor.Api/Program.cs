@@ -83,6 +83,8 @@ builder.Services.AddScoped<ServicioLogros>();
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
 
+builder.Services.AddHostedService<MonitorPuertasArena>();
+
 // Servicio de puntuación.
 builder.Services.AddScoped<ServicioPuntuacion>();
 
