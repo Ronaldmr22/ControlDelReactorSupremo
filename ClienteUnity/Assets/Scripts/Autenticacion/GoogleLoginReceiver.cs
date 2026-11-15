@@ -137,8 +137,14 @@ public class GoogleLoginReceiver : MonoBehaviour
 
             if (request.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError("Error al validar Google: " +
-                               request.downloadHandler.text);
+                Debug.LogError(
+                    "Error al validar Google.\n" +
+                    "Resultado: " + request.result + "\n" +
+                    "HTTP: " + request.responseCode + "\n" +
+                    "Error: " + request.error + "\n" +
+                    "Respuesta: " + request.downloadHandler.text
+                );
+
                 yield break;
             }
 
