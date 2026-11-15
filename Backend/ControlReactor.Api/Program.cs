@@ -105,6 +105,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<ExtractionSessionManager>();
+builder.Services.AddSingleton<ReactorEnergyManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
 
 // Registrar servicios de autorización
