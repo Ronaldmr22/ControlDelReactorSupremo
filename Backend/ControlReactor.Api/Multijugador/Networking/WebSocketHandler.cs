@@ -327,41 +327,6 @@ public sealed class WebSocketHandler
             return;
         }
 
-        using var scope = _scopeFactory.CreateScope();
-
-        var servicioPuntuacion = scope.ServiceProvider
-            .GetRequiredService<ServicioPuntuacion>();
-
-        int? nuevoPuntaje = await servicioPuntuacion.RegistrarMovimiento(
-            connection.IdJugadorPartida.Value);
-
-        if (!nuevoPuntaje.HasValue)
-        {
-            await SendErrorAsync(
-                connection,
-                "No se pudo registrar el movimiento.");
-            return;
-        }
-        // Mensaje con el puntaje actualizado.
-        var mensajePuntaje = new ServerMessage
-        {
-            Type = "score_updated",
-            RoomCode = connection.RoomCode,
-            PlayerId = connection.PlayerId,
-            IdUsuario = connection.IdUsuario,
-            IdJugadorPartida = connection.IdJugadorPartida.Value,
-            Puntaje = nuevoPuntaje.Value
-        };
-
-        // Enviar el puntaje al jugador que se movió.
-        await connection.SendAsync(mensajePuntaje);
-
-        // Enviar el puntaje a los demás jugadores de la sala.
-        foreach (var recipient in recipients)
-        {
-            await recipient.SendAsync(mensajePuntaje);
-        }
-
         var movementMessage = new ServerMessage
         {
             Type = "player_moved",

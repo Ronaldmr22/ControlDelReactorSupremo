@@ -492,28 +492,6 @@ app.MapGet("/api/puntuacion/{idJugadorPartida:int}", async (
     });
 });
 
-// Registra un movimiento y suma un punto al participante.
-app.MapPost("/api/puntuacion/movimiento/{idJugadorPartida:int}", async (
-    int idJugadorPartida,
-    ServicioPuntuacion servicio) =>
-{
-    var puntaje = await servicio.RegistrarMovimiento(idJugadorPartida);
-
-    if (puntaje == null)
-    {
-        return Results.BadRequest(new
-        {
-            mensaje = "El participante no existe o la partida no está activa."
-        });
-    }
-
-    return Results.Ok(new
-    {
-        mensaje = "Movimiento registrado correctamente.",
-        puntaje = puntaje.Value
-    });
-});
-
 // Consulta quién tiene el mayor puntaje de una partida.
 app.MapGet("/api/partidas/{idPartida:int}/ganador", async (
     int idPartida,
