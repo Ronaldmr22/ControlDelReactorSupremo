@@ -7,7 +7,7 @@ using ControlReactor.Api.Multijugador.Protocol;
 using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 using ControlReactor.Negocio.Servicios;
-
+using ControlReactor.Api.Multijugador.Configuration;
 
 
 namespace ControlReactor.Api.Multijugador.Networking;
@@ -150,12 +150,13 @@ public sealed class WebSocketHandler
                 break;
 
             case "extract_start":
-                await RecibirInicioExtraccionAsync(connection, message);
+                await HandleExtractionStartAsync(connection, message);
                 break;
 
             case "extract_stop":
-                await RecibirFinExtraccionAsync(connection, message);
+                await HandleExtractionStopAsync(connection, message);
                 break;
+
             default:
                 await SendErrorAsync(
                     connection,
@@ -392,35 +393,34 @@ public sealed class WebSocketHandler
         });
     }
 
-    private async Task RecibirInicioExtraccionAsync(
+
+    private async Task HandleExtractionStartAsync(
         ClientConnection connection,
         ClientMessage message)
     {
-        // Validar que la solicitud tenga identificadores correctos.
         if (message.ReactorId != "central" ||
             !Guid.TryParseExact(message.ExtractionId, "N", out _))
         {
             await SendErrorAsync(
-                connection, "Solicitud de extraccion invalida.");
+                connection, "Solicitud de extracción inválida.");
             return;
         }
 
-        // Comprobar que el jugador este vinculado a una sala.
-        if (connection.RoomCode is not string codigoSala ||
-            connection.IdUsuario is not int idUsuario ||
-            connection.IdJugadorPartida is not int idJugadorPartida)
+        if (connection.RoomCode is not string roomCode ||
+            connection.IdUsuario is not int userId ||
+            connection.IdJugadorPartida is not int playerMatchId)
         {
             await SendErrorAsync(
-                connection, "El jugador no esta identificado.");
+                connection, "El jugador no está identificado.");
             return;
         }
 
-        var conexiones = _groupManager.ObtenerConexionesSala(codigoSala);
+        var roomConnections = _groupManager.ObtenerConexionesSala(roomCode);
 
-        if (!conexiones.Any(c => ReferenceEquals(c, connection)))
+        if (!roomConnections.Any(c => ReferenceEquals(c, connection)))
         {
             await SendErrorAsync(
-                connection, "El jugador no esta conectado a la sala.");
+                connection, "El jugador no está conectado a la sala.");
             return;
         }
 
@@ -429,47 +429,72 @@ public sealed class WebSocketHandler
         var db = scope.ServiceProvider
             .GetRequiredService<ControlReactorDbContext>();
 
-        // Verificar la partida.
-        var partida = await db.Partidas
+        var match = await db.Partidas
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.CodigoSala == codigoSala);
+            .FirstOrDefaultAsync(p => p.CodigoSala == roomCode);
 
-        if (partida == null || partida.Estado != "EN_CURSO")
+        if (match == null || match.Estado != "EN_CURSO")
         {
             await SendErrorAsync(
-                connection, "La partida no esta en curso.");
+                connection, "La partida no está en curso.");
             return;
         }
 
-        // Confirmar la participacion del jugador.
-        bool pertenece = await db.JugadoresPartida
+        bool isParticipant = await db.JugadoresPartida
             .AsNoTracking()
             .AnyAsync(j =>
-                j.IdJugadorPartida == idJugadorPartida &&
-                j.IdUsuario == idUsuario &&
-                j.IdPartida == partida.IdPartida &&
+                j.IdJugadorPartida == playerMatchId &&
+                j.IdUsuario == userId &&
+                j.IdPartida == match.IdPartida &&
                 j.EnSala);
 
-        if (!pertenece)
+        if (!isParticipant)
         {
             await SendErrorAsync(
                 connection, "El jugador no pertenece a la partida.");
             return;
         }
 
-        // La solicitud paso las comprobaciones iniciales.
-        // TODAVIA NO SE AUTORIZA LA EXTRACCION.
-        // Faltan distancia, energia y control de duplicados.
+        if (!ReactorConfiguration.TryGet(
+            match.IdEscenario, out ReactorData reactor))
+        {
+            await SendErrorAsync(
+                connection, "No existe un reactor configurado para este escenario.");
+            return;
+        }
+
+        if (!connection.HasReceivedPosition)
+        {
+            await SendErrorAsync(
+                connection, "Todavía no se conoce tu posición.");
+            return;
+        }
+
+        float deltaX = connection.X - reactor.X;
+        float deltaY = connection.Y - reactor.Y;
+
+        float distanceSquared =
+            deltaX * deltaX +
+            deltaY * deltaY;
+
+        float radiusSquared = reactor.Radius * reactor.Radius;
+
+        if (distanceSquared > radiusSquared)
+        {
+            await SendErrorAsync(
+                connection, "Estás demasiado lejos del reactor.");
+            return;
+        }
 
         await connection.SendAsync(new ServerMessage
         {
             Type = "extract_received",
-            Message = "Solicitud recibida. Validacion pendiente."
+            Message = "Solicitud recibida. Validación pendiente."
         });
     }
 
 
-    private async Task RecibirFinExtraccionAsync(
+    private async Task HandleExtractionStopAsync(
         ClientConnection connection,
         ClientMessage message)
     {
@@ -477,7 +502,7 @@ public sealed class WebSocketHandler
             connection.IdJugadorPartida == null)
         {
             await SendErrorAsync(
-                connection, "El jugador no esta identificado.");
+                connection, "El jugador no está identificado.");
             return;
         }
 
@@ -485,18 +510,14 @@ public sealed class WebSocketHandler
             !Guid.TryParseExact(message.ExtractionId, "N", out _))
         {
             await SendErrorAsync(
-                connection, "Identificador de extraccion invalido.");
+                connection, "Identificador de extracción inválido.");
             return;
         }
-
-        // Por ahora solo reconocemos la solicitud.
-        // En el siguiente paso detendremos la sesion activa.
 
         await connection.SendAsync(new ServerMessage
         {
             Type = "extract_stop_received",
-            Message = "Fin de extraccion recibido."
+            Message = "Fin de extracción recibido."
         });
     }
-
 }

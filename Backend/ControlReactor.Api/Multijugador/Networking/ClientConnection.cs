@@ -29,6 +29,8 @@ public sealed class ClientConnection
 
     public float Y { get; set; }
 
+    public bool HasReceivedPosition { get; set; }
+
     public ClientConnection(WebSocket socket, string playerId)
     {
         Socket = socket;

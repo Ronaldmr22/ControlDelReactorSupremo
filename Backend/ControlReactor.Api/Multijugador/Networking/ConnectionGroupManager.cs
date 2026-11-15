@@ -113,6 +113,7 @@ public sealed class ConnectionGroupManager
 
             connection.X = x;
             connection.Y = y;
+            connection.HasReceivedPosition = true;
 
             updatedPlayer = connection.ToPlayerState();
 
