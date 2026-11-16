@@ -6939,6 +6939,7 @@ GameObject:
   - component: {fileID: 1854355525}
   - component: {fileID: 1854355524}
   - component: {fileID: 1854355527}
+  - component: {fileID: 1854355528}
   m_Layer: 0
   m_Name: ReactorCentral
   m_TagString: Untagged
@@ -7086,6 +7087,20 @@ MonoBehaviour:
   barraEnergia: {fileID: 2007899069}
   colorDisponible: {r: 1, g: 1, b: 1, a: 1}
   colorAgotado: {r: 0.8627452, g: 0.1921569, b: 0.1960784, a: 1}
+--- !u!114 &1854355528
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854355523}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e7ed408bd05e6142b79b31afd31a993, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReactorNetworkSync
+  clienteWebSocket: {fileID: 464542369}
+  reactor: {fileID: 1854355527}
 --- !u!1 &1936970026
 GameObject:
   m_ObjectHideFlags: 0
