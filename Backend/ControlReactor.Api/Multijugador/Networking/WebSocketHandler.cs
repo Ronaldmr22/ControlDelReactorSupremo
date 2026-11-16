@@ -243,7 +243,7 @@ public sealed class WebSocketHandler
 
         bool success = _groupManager.Subscribe(
             connection,
-            message.RoomCode,
+            codigoSala,
             out List<ClientConnection> existingConnections,
             out List<PlayerState> players,
             out string error);
@@ -261,6 +261,11 @@ public sealed class WebSocketHandler
             PlayerId = connection.PlayerId,
             PlayerName = connection.PlayerName,
         });
+
+        await SendRoomStateAsync(
+        connection,
+        partida.IdPartida,
+        partida.EnergiaRestante);
 
         // Informar al jugador nuevo quiénes ya estaban en la sala.
         foreach (var existing in existingConnections)
@@ -448,6 +453,17 @@ public sealed class WebSocketHandler
             return;
         }
 
+
+        if (match.EnergiaRestante <= 0 ||
+            match.ReactorRechargeReadyAtUtc != null)
+        {
+            await SendErrorAsync(
+                connection,
+                "El reactor está recargando. Intentá nuevamente en unos segundos.");
+            return;
+        }
+
+
         bool isParticipant = await db.JugadoresPartida
             .AsNoTracking()
             .AnyAsync(j =>
@@ -475,6 +491,14 @@ public sealed class WebSocketHandler
         {
             await SendErrorAsync(
                 connection, "Todavía no se conoce tu posición.");
+            return;
+        }
+
+        if (!float.IsFinite(connection.X) ||
+            !float.IsFinite(connection.Y))
+        {
+            await SendErrorAsync(
+                connection, "La posición del jugador no es válida.");
             return;
         }
 
@@ -563,4 +587,47 @@ public sealed class WebSocketHandler
         });
 
     }
+
+
+    private async Task SendRoomStateAsync(
+        ClientConnection connection,
+        int matchId,
+        int remainingEnergy)
+    {
+        await connection.SendAsync(new ServerMessage
+        {
+            Type = "reactor_state",
+            RoomCode = connection.RoomCode,
+            EnergiaRestante = remainingEnergy
+        });
+
+        using var scope = _scopeFactory.CreateScope();
+
+        var db = scope.ServiceProvider
+            .GetRequiredService<ControlReactorDbContext>();
+
+        var scores = await db.JugadoresPartida
+            .AsNoTracking()
+            .Where(p => p.IdPartida == matchId && p.EnSala)
+            .Select(p => new
+            {
+                p.IdJugadorPartida,
+                p.IdUsuario,
+                p.Puntaje
+            })
+            .ToListAsync();
+
+        foreach (var player in scores)
+        {
+            await connection.SendAsync(new ServerMessage
+            {
+                Type = "score_updated",
+                RoomCode = connection.RoomCode,
+                IdJugadorPartida = player.IdJugadorPartida,
+                IdUsuario = player.IdUsuario,
+                Puntaje = player.Puntaje
+            });
+        }
+    }
+
 }
