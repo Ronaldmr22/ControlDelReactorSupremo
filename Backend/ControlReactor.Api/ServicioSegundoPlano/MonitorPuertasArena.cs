@@ -10,6 +10,7 @@ public sealed class MonitorPuertasArena : BackgroundService
     private readonly ILogger<MonitorPuertasArena> _logger;
     private readonly ConnectionGroupManager _groupManager;
     private readonly Dictionary<int, CicloPuertasArena> _ciclos = new();
+    private readonly Dictionary<int, CicloPuertasArena> _ciclosBarreras = new();
 
     public MonitorPuertasArena(
         IServiceScopeFactory scopeFactory,
@@ -45,6 +46,7 @@ public sealed class MonitorPuertasArena : BackgroundService
                         int id = partida.IdPartida;
                         var zonas = ZonasPuertasArena.ObtenerPorEscenario(partida.IdEscenario);
                         activas.Add(id);
+                        await RevisarBarrerasAsync(id, partida.IdEscenario, partida.CodigoSala, ahora);
 
                         if (!_ciclos.TryGetValue(id, out var ciclo))
                         {
@@ -119,6 +121,11 @@ public sealed class MonitorPuertasArena : BackgroundService
                         if (!activas.Contains(id))
                             _ciclos.Remove(id);
                     }
+                    foreach (int id in _ciclosBarreras.Keys.ToArray())
+                    {
+                        if (!activas.Contains(id))
+                            _ciclosBarreras.Remove(id);
+                    }
                 }
                 catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
                 {
@@ -130,5 +137,39 @@ public sealed class MonitorPuertasArena : BackgroundService
         {
             // El servidor se está apagando.
         }
+    }
+        private async Task RevisarBarrerasAsync(
+        int idPartida,
+        int? idEscenario,
+        string? codigoSala,
+        DateTimeOffset ahora)
+    {
+        var zonas = ZonasBarrerasArena.ObtenerPorEscenario(idEscenario);
+
+        if (zonas.Count == 0 || string.IsNullOrWhiteSpace(codigoSala))
+            return;
+
+        if (!_ciclosBarreras.TryGetValue(idPartida, out var ciclo))
+        {
+            ciclo = new CicloPuertasArena(
+                ahora, segundosCerradas: (8, 14), segundosAbiertas: (12, 20));
+            _ciclosBarreras[idPartida] = ciclo;
+        }
+
+        ciclo.Revisar(ahora);
+
+        var conexiones = _groupManager.ObtenerConexionesSala(codigoSala);
+        var cerradas = ciclo.ActualizarPuertas(zonas, zona =>
+            conexiones.Any(j => zona.OcupadaPorJugador(j.X, j.Y)));
+
+        var mensaje = new ServerMessage
+        {
+            Type = "barriers_state",
+            RoomCode = codigoSala,
+            PuertasCerradas = cerradas
+        };
+
+        foreach (var conexion in conexiones)
+            await conexion.SendAsync(mensaje);
     }
 }
