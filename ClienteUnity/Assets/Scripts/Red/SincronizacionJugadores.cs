@@ -1,11 +1,13 @@
-
 using System;
 using UnityEngine;
+using System.Collections;
 
 public class SincronizacionJugadores : MonoBehaviour
 {
     [SerializeField] private ClienteWebSocket cliente;
     [SerializeField] private GeneradorJugadores generador;
+    [SerializeField]
+    private ControladorGuardianes controladorGuardianes;
 
     [Serializable]
     private class MensajeRed
@@ -21,7 +23,8 @@ public class SincronizacionJugadores : MonoBehaviour
     private string miIdWebSocket;
     private float siguienteEnvio;
     private Vector3 ultimaPosicionEnviada;
-    private bool primeraPosicion = true;
+    private MovimientoJugador movimientoLocal;
+    private Coroutine rutinaCongelamiento;
 
     private void OnEnable()
     {
@@ -33,6 +36,12 @@ public class SincronizacionJugadores : MonoBehaviour
     {
         if (cliente != null)
             cliente.MensajeRecibido -= ProcesarMensaje;
+
+        if (movimientoLocal != null)
+        {
+            movimientoLocal.AccionEjecutada -= EnviarAccion;
+            movimientoLocal = null;
+        }
     }
 
     private void Update()
@@ -44,19 +53,22 @@ public class SincronizacionJugadores : MonoBehaviour
             string.IsNullOrEmpty(miIdWebSocket))
             return;
 
-        // Enviar posición 10 veces por segundo.
+        VincularAccionLocal();
+
+        // Enviar posición 20 veces por segundo.
         if (Time.time < siguienteEnvio)
             return;
 
-        siguienteEnvio = Time.time + 0.1f;
+        siguienteEnvio = Time.time + 0.05f;
 
         Vector3 posicion = generador.JugadorLocal.position;
-        if (!primeraPosicion &&
-            Vector3.Distance(posicion, ultimaPosicionEnviada) < 0.01f)
-            return;
+
+        Debug.Log(
+            $"POSICION ENVIADA UNITY: " +
+            $"X={posicion.x:F2}, Y={posicion.y:F2}"
+        );
 
         ultimaPosicionEnviada = posicion;
-        primeraPosicion = false;
 
         cliente.EnviarMensaje(JsonUtility.ToJson(new MensajeRed
         {
@@ -69,6 +81,29 @@ public class SincronizacionJugadores : MonoBehaviour
     private void ProcesarMensaje(string json)
     {
         MensajeRed mensaje = JsonUtility.FromJson<MensajeRed>(json);
+    
+        if (mensaje.type == "player_frozen")
+        {
+            if (mensaje.playerId != miIdWebSocket)
+                return;
+
+            if (generador == null || generador.JugadorLocal == null)
+                return;
+
+            MovimientoJugador movimientoJugador =
+                generador.JugadorLocal.GetComponent<MovimientoJugador>();
+
+            if (movimientoJugador == null)
+                return;
+
+            if (rutinaCongelamiento != null)
+                StopCoroutine(rutinaCongelamiento);
+
+            rutinaCongelamiento =
+                StartCoroutine(CongelarTemporalmente(movimientoJugador));
+
+            return;
+        }
 
         if (mensaje.type == "room_subscribed")
         {
@@ -123,4 +158,55 @@ public class SincronizacionJugadores : MonoBehaviour
                 generador.EliminarJugadorRemoto(mensaje.playerId);
         }
     }
+
+    private void EnviarAccion()
+    {
+        if (cliente == null ||
+            !cliente.EstaConectado ||
+            string.IsNullOrEmpty(miIdWebSocket))
+            return;
+
+        cliente.EnviarMensaje(JsonUtility.ToJson(new MensajeRed
+        {
+            type = "action"
+        }));
+    }
+
+    private void VincularAccionLocal()
+    {
+        if (generador == null || generador.JugadorLocal == null)
+            return;
+
+        MovimientoJugador movimiento =
+            generador.JugadorLocal.GetComponent<MovimientoJugador>();
+
+        if (movimiento == movimientoLocal)
+            return;
+
+        if (movimientoLocal != null)
+            movimientoLocal.AccionEjecutada -= EnviarAccion;
+
+        movimientoLocal = movimiento;
+
+        if (movimientoLocal != null)
+            movimientoLocal.AccionEjecutada += EnviarAccion;
+    }
+    private System.Collections.IEnumerator CongelarTemporalmente(
+    MovimientoJugador jugador)
+    {
+        jugador.EstablecerCongelado(true);
+
+        Debug.Log("Jugador congelado durante 2 segundos.");
+
+        yield return new WaitForSecondsRealtime(2f);
+
+        if (jugador != null)
+            jugador.EstablecerCongelado(false);
+
+        rutinaCongelamiento = null;
+
+        Debug.Log("Jugador descongelado.");
+    }
+
+
 }

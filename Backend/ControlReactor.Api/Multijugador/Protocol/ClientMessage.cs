@@ -10,4 +10,5 @@ public class ClientMessage
     public float? Y { get; set; }
     public string? ReactorId { get; set; }
     public string? ExtractionId { get; set; }
+    public List<PosicionGuardian>? PosicionesGuardianes { get; set; }
 }

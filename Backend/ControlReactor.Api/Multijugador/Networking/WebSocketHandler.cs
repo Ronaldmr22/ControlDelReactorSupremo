@@ -9,6 +9,7 @@ using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 using ControlReactor.Negocio.Servicios;
 using ControlReactor.Api.Multijugador.Configuration;
+using ControlReactor.Negocio.Guardianes;
 
 
 namespace ControlReactor.Api.Multijugador.Networking;
@@ -22,9 +23,12 @@ public sealed class WebSocketHandler
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
-    private readonly ExtractionSessionManager _extractionManager;
+private readonly ExtractionSessionManager _extractionManager;
 
-    public WebSocketHandler(ConnectionGroupManager groupManager, IServiceScopeFactory scopeFactory, ExtractionSessionManager extractionManager)
+public WebSocketHandler(
+        ConnectionGroupManager groupManager,
+        IServiceScopeFactory scopeFactory,
+        ExtractionSessionManager extractionManager)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
@@ -148,7 +152,6 @@ public sealed class WebSocketHandler
             case "subscribe_room":
                 await SubscribeToRoomAsync(connection, message);
                 break;
-
             case "move":
                 await RelayMovementAsync(connection, message);
                 break;
@@ -160,13 +163,44 @@ public sealed class WebSocketHandler
             case "extract_stop":
                 await HandleExtractionStopAsync(connection, message);
                 break;
-
+            case "configure_guardians":
+                await ConfigureGuardiansAsync(connection, message);
+                break;
             default:
                 await SendErrorAsync(
                     connection,
                     "Tipo de mensaje desconocido.");
                 break;
         }
+    }
+    private async Task ConfigureGuardiansAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(connection.RoomCode))
+        {
+            await SendErrorAsync(
+                connection,
+                "Debes pertenecer a una sala para configurar guardianes.");
+
+            return;
+        }
+
+        if (message.PosicionesGuardianes == null ||
+            message.PosicionesGuardianes.Count != 4)
+        {
+            await SendErrorAsync(
+                connection,
+                "Se necesitan exactamente cuatro posiciones.");
+
+            return;
+        }
+
+        // Pendiente: validar el escenario y la autorización.
+        // Todavía no creamos los guardianes.
+        await SendErrorAsync(
+            connection,
+            "La configuración de guardianes aún no está habilitada.");
     }
 
     private async Task SubscribeToRoomAsync(

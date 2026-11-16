@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
@@ -37,14 +36,28 @@ namespace ControlReactor.Api.Autenticacion
             if (string.IsNullOrWhiteSpace(codigo) ||
                 string.IsNullOrWhiteSpace(idSolicitud) ||
                 string.IsNullOrWhiteSpace(verificador))
+            {
+                Console.WriteLine("GOOGLE: Faltan datos para el canje.");
                 return null;
+            }
 
             if (!_codigos.TryGetValue(codigo, out var datos))
+            {
+                Console.WriteLine("GOOGLE: Código no encontrado en memoria.");
                 return null;
+            }
 
-            if (datos.IdSolicitud != idSolicitud ||
-                DateTime.UtcNow > datos.Expira)
+            if (datos.IdSolicitud != idSolicitud)
+            {
+                Console.WriteLine("GOOGLE: IdSolicitud no coincide.");
                 return null;
+            }
+
+            if (DateTime.UtcNow > datos.Expira)
+            {
+                Console.WriteLine("GOOGLE: Código expirado.");
+                return null;
+            }
 
             byte[] hash = SHA256.HashData(
                 Encoding.ASCII.GetBytes(verificador));
@@ -55,12 +68,18 @@ namespace ControlReactor.Api.Autenticacion
                 .Replace('/', '_');
 
             if (desafioCalculado != datos.Desafio)
+            {
+                Console.WriteLine("GOOGLE: Desafío PKCE no coincide.");
                 return null;
+            }
 
-            // El código solo puede utilizarse una vez
             if (!_codigos.TryRemove(codigo, out _))
+            {
+                Console.WriteLine("GOOGLE: No se pudo consumir el código.");
                 return null;
+            }
 
+            Console.WriteLine("GOOGLE: Código validado correctamente.");
             return datos.IdUsuario;
         }
     }

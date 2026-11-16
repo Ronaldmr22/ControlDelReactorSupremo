@@ -11,14 +11,14 @@ public class MovimientoJugador : MonoBehaviour
     [SerializeField] private Sprite arriba;
     [SerializeField] private Sprite izquierda;
     [SerializeField] private Sprite derecha;
-
     private Rigidbody2D cuerpo;
     private SpriteRenderer imagen;
     private Vector2 movimiento;
+    private bool estaCongelado;
+    private MensajeSobreAvatar mensaje;
 
     public event Action AccionEjecutada;
     public event Action AccionFinalizada;
-
     private bool accionMantenida;
 
     private void Awake()
@@ -46,6 +46,11 @@ public class MovimientoJugador : MonoBehaviour
 
     private void Update()
     {
+        if (estaCongelado)
+        {
+            movimiento = Vector2.zero;
+            return;
+        }
         Gamepad control = Gamepad.current;
 
         // Movimiento con la cruceta.
@@ -94,6 +99,12 @@ public class MovimientoJugador : MonoBehaviour
     }
     private void FixedUpdate()
     {
+        if (estaCongelado)
+        {
+            cuerpo.linearVelocity = Vector2.zero;
+            return;
+        }
+
         cuerpo.linearVelocity = movimiento * velocidad;
     }
 
@@ -110,6 +121,16 @@ public class MovimientoJugador : MonoBehaviour
 
         if (cuerpo != null)
             cuerpo.linearVelocity = Vector2.zero;
+    }
+    public void EstablecerCongelado(bool congelado)
+    {
+        estaCongelado = congelado;
+
+        if (congelado)
+        {
+            movimiento = Vector2.zero;
+            cuerpo.linearVelocity = Vector2.zero;
+        }
     }
 }
 
