@@ -8,5 +8,7 @@ public class ClientMessage
     public int? IdUsuario { get; set; }
     public float? X { get; set; }
     public float? Y { get; set; }
+    public string? ReactorId { get; set; }
+    public string? ExtractionId { get; set; }
     public List<PosicionGuardian>? PosicionesGuardianes { get; set; }
 }

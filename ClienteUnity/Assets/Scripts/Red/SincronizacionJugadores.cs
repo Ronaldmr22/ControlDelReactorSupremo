@@ -23,7 +23,6 @@ public class SincronizacionJugadores : MonoBehaviour
     private string miIdWebSocket;
     private float siguienteEnvio;
     private Vector3 ultimaPosicionEnviada;
-    private bool primeraPosicion = true;
     private MovimientoJugador movimientoLocal;
     private Coroutine rutinaCongelamiento;
 
@@ -47,13 +46,14 @@ public class SincronizacionJugadores : MonoBehaviour
 
     private void Update()
     {
-        VincularAccionLocal();
         if (cliente == null ||
             !cliente.EstaConectado ||
             generador == null ||
             generador.JugadorLocal == null ||
             string.IsNullOrEmpty(miIdWebSocket))
             return;
+
+        VincularAccionLocal();
 
         // Enviar posición 20 veces por segundo.
         if (Time.time < siguienteEnvio)
@@ -69,7 +69,6 @@ public class SincronizacionJugadores : MonoBehaviour
         );
 
         ultimaPosicionEnviada = posicion;
-        primeraPosicion = false;
 
         cliente.EnviarMensaje(JsonUtility.ToJson(new MensajeRed
         {
@@ -152,26 +151,6 @@ public class SincronizacionJugadores : MonoBehaviour
                 movimientoRemoto.ActualizarDireccionVisual(direccion);
 
             remoto.position = nuevaPosicion;
-        }
-        else if (mensaje.type == "player_action")
-        {
-            if (mensaje.playerId == miIdWebSocket)
-                return;
-
-            if (generador == null)
-                return;
-
-            Transform remoto =
-                generador.ObtenerJugadorRemoto(mensaje.playerId);
-
-            if (remoto == null)
-                return;
-
-            MensajeSobreAvatar mensajeAvatar =
-                remoto.GetComponent<MensajeSobreAvatar>();
-
-            if (mensajeAvatar != null)
-                mensajeAvatar.Mostrar("Acción");
         }
         else if (mensaje.type == "player_left")
         {

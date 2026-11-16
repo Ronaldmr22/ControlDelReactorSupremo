@@ -11,7 +11,6 @@ public class MovimientoJugador : MonoBehaviour
     [SerializeField] private Sprite arriba;
     [SerializeField] private Sprite izquierda;
     [SerializeField] private Sprite derecha;
-
     private Rigidbody2D cuerpo;
     private SpriteRenderer imagen;
     private Vector2 movimiento;
@@ -19,12 +18,13 @@ public class MovimientoJugador : MonoBehaviour
     private MensajeSobreAvatar mensaje;
 
     public event Action AccionEjecutada;
+    public event Action AccionFinalizada;
+    private bool accionMantenida;
 
     private void Awake()
     {
         cuerpo = GetComponent<Rigidbody2D>();
         imagen = GetComponent<SpriteRenderer>();
-        mensaje = GetComponent<MensajeSobreAvatar>();
     }
 
     public void ConfigurarSprites(
@@ -61,18 +61,20 @@ public class MovimientoJugador : MonoBehaviour
         movimiento = Vector2.ClampMagnitude(movimiento, 1f);
 
         // Acción con el botón X del control.
-        if (control != null && control.buttonSouth.wasPressedThisFrame)
+        bool presionada = control != null &&
+                            control.buttonSouth.isPressed;
+
+        if (presionada && !accionMantenida)
         {
-            Debug.Log("Acción ejecutada");
-
-            if (mensaje != null)
-                mensaje.Mostrar("Acción");
-            else
-                Debug.LogWarning("Falta MensajeSobreAvatar en el personaje.");
-
-            // Notificar al sistema multijugador.
+            accionMantenida = true;
             AccionEjecutada?.Invoke();
         }
+        else if (!presionada && accionMantenida)
+        {
+            accionMantenida = false;
+            AccionFinalizada?.Invoke();
+        }
+
 
         ActualizarDireccionVisual(movimiento);
     }
@@ -108,6 +110,13 @@ public class MovimientoJugador : MonoBehaviour
 
     private void OnDisable()
     {
+
+        if (accionMantenida)
+        {
+            accionMantenida = false;
+            AccionFinalizada?.Invoke();
+        }
+
         movimiento = Vector2.zero;
 
         if (cuerpo != null)

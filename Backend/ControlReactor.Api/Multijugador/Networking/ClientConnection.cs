@@ -32,6 +32,8 @@ public sealed class ClientConnection
     public DateTime? CongeladoHasta { get; set; }
     public DateTime UltimaActualizacionPosicion { get; set; } = DateTime.MinValue;
 
+    public bool HasReceivedPosition { get; set; }
+
     public ClientConnection(WebSocket socket, string playerId)
     {
         Socket = socket;
