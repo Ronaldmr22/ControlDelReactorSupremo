@@ -4,8 +4,10 @@ public class GrupoPuertasArena : MonoBehaviour
 {
     [SerializeField] private ObstaculoArena[] puertas;
     [SerializeField] private ClienteWebSocket cliente;
+    [SerializeField] private string tipoMensajeEstado = "doors_state";
 
     [System.Serializable]
+    
     private class MensajePuertas
     {
         public string type;
@@ -30,7 +32,7 @@ public class GrupoPuertasArena : MonoBehaviour
     {
         var mensaje = JsonUtility.FromJson<MensajePuertas>(json);
 
-        if (mensaje == null || mensaje.type != "doors_state"
+        if (mensaje == null || mensaje.type != tipoMensajeEstado
             || mensaje.puertasCerradas == null || puertas == null)
             return;
 
