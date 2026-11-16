@@ -23,5 +23,9 @@ namespace ControlReactor.Modelos.Entidades
         public string Estado { get; set; } = "ESPERANDO";
 
         public int SegundosCongelamiento { get; set; }
+
+        public int EnergiaRestante { get; set; } = 100;
+
+        public DateTime? ReactorRechargeReadyAtUtc { get; set; }
     }
 }

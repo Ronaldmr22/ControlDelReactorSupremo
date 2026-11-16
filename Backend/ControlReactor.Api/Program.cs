@@ -80,6 +80,7 @@ builder.Services.AddScoped<ServicioLogros>();
 
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
+builder.Services.AddHostedService<ExtractionProcessor>();
 
 // Servicio de puntuación.
 builder.Services.AddScoped<ServicioPuntuacion>();
@@ -107,6 +108,8 @@ builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<ExtractionSessionManager>();
 builder.Services.AddSingleton<ReactorEnergyManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
+
+builder.Services.AddHostedService<ExtractionProcessor>();
 
 // Registrar servicios de autorización
 builder.Services.AddAuthorization();

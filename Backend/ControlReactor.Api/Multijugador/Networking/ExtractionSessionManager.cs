@@ -88,4 +88,26 @@ public sealed class ExtractionSessionManager
                     StringComparison.Ordinal));
         }
     }
+
+
+    public List<ExtractionSession> GetActiveSessions()
+    {
+        lock (_sync)
+        {
+            return _activeSessions.Values.ToList();
+        }
+    }
+
+    public bool IsActive(ExtractionSession session)
+    {
+        lock (_sync)
+        {
+            return _activeSessions.TryGetValue(
+                session.PlayerId,
+                out var currentSession
+            ) &&
+            currentSession.ExtractionId == session.ExtractionId;
+        }
+    }
+
 }

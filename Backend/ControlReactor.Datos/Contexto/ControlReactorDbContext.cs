@@ -30,9 +30,18 @@ namespace ControlReactor.Datos.Contexto
 
             // PARTIDA
             modelBuilder.Entity<Partida>().HasKey(p => p.IdPartida);
+
             modelBuilder.Entity<Partida>()
-            .HasIndex(p => p.CodigoSala)
-            .IsUnique();
+                .HasIndex(p => p.CodigoSala)
+                .IsUnique();
+
+            modelBuilder.Entity<Partida>()
+                .Property(p => p.EnergiaRestante)
+                .HasDefaultValue(100);
+
+            modelBuilder.Entity<Partida>()
+                .Property(p => p.IdEscenario)
+                .HasDefaultValue(1);
 
             // JUGADOR - PARTIDA
             modelBuilder.Entity<JugadorPartida>().HasKey(jp => jp.IdJugadorPartida);
