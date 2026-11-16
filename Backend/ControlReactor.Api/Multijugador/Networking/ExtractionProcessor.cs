@@ -1,4 +1,5 @@
 ﻿
+using System.Data;
 using ControlReactor.Api.Multijugador.Configuration;
 using ControlReactor.Api.Multijugador.Protocol;
 using ControlReactor.Datos.Contexto;
@@ -8,24 +9,25 @@ namespace ControlReactor.Api.Multijugador.Networking;
 
 public sealed class ExtractionProcessor : BackgroundService
 {
+    private const int MaxEnergy = 100;
+
+    private static readonly TimeSpan RechargeDuration =
+        TimeSpan.FromSeconds(15);
+
     private readonly ExtractionSessionManager _sessions;
-    private readonly ReactorEnergyManager _energy;
     private readonly ConnectionGroupManager _groups;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ExtractionProcessor> _logger;
 
-    private readonly Dictionary<string, DateTimeOffset>
-        _lastAward = new();
+    private readonly Dictionary<string, DateTimeOffset> _lastAward = new();
 
     public ExtractionProcessor(
         ExtractionSessionManager sessions,
-        ReactorEnergyManager energy,
         ConnectionGroupManager groups,
         IServiceScopeFactory scopeFactory,
         ILogger<ExtractionProcessor> logger)
     {
         _sessions = sessions;
-        _energy = energy;
         _groups = groups;
         _scopeFactory = scopeFactory;
         _logger = logger;
@@ -37,33 +39,61 @@ public sealed class ExtractionProcessor : BackgroundService
         using var timer = new PeriodicTimer(
             TimeSpan.FromMilliseconds(100));
 
-        while (await timer.WaitForNextTickAsync(stoppingToken))
+        try
         {
-            foreach (var session in _sessions.GetActiveSessions())
+            while (await timer.WaitForNextTickAsync(stoppingToken))
             {
+                foreach (var session in _sessions.GetActiveSessions())
+                {
+                    try
+                    {
+                        await ProcessSessionAsync(session, stoppingToken);
+                    }
+                    catch (OperationCanceledException)
+                        when (stoppingToken.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "Error al procesar extracción de {PlayerId}",
+                            session.PlayerId);
+                    }
+                }
+
                 try
                 {
-                    await ProcessSessionAsync(
-                        session, stoppingToken);
+                    await ProcessRechargesAsync(stoppingToken);
+                }
+                catch (OperationCanceledException)
+                    when (stoppingToken.IsCancellationRequested)
+                {
+                    return;
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(
                         ex,
-                        "Error al procesar la extracción del jugador {PlayerId}",
-                        session.PlayerId);
+                        "Error procesando recargas");
+                }
+
+                var activeKeys = _sessions.GetActiveSessions()
+                    .Select(GetSessionKey)
+                    .ToHashSet();
+
+                foreach (string key in _lastAward.Keys.ToList())
+                {
+                    if (!activeKeys.Contains(key))
+                        _lastAward.Remove(key);
                 }
             }
-
-            // Remove timestamps for sessions that are no longer active.
-            foreach (string key in _lastAward.Keys.ToList())
-            {
-                bool exists = _sessions.GetActiveSessions()
-                    .Any(s => GetSessionKey(s) == key);
-
-                if (!exists)
-                    _lastAward.Remove(key);
-            }
+        }
+        catch (OperationCanceledException)
+            when (stoppingToken.IsCancellationRequested)
+        {
+            // Normal shutdown.
         }
     }
 
@@ -76,119 +106,297 @@ public sealed class ExtractionProcessor : BackgroundService
 
         string key = GetSessionKey(session);
 
-        DateTimeOffset lastTime =
+        DateTimeOffset lastAward =
             _lastAward.TryGetValue(key, out var previous)
                 ? previous
                 : session.StartedAt;
 
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-
-        if ((now - lastTime).TotalSeconds < 1)
+        if (DateTimeOffset.UtcNow - lastAward <
+            TimeSpan.FromSeconds(1))
             return;
 
         var connections =
             _groups.ObtenerConexionesSala(session.RoomCode);
 
-        ClientConnection? connection = connections
-            .FirstOrDefault(c => c.PlayerId == session.PlayerId);
+        ClientConnection? connection = connections.FirstOrDefault(
+            c => c.PlayerId == session.PlayerId);
 
-        if (connection == null ||
-            !connection.HasReceivedPosition)
+        if (connection == null)
+        {
+            _sessions.TryStopSession(session);
             return;
+        }
 
         using var scope = _scopeFactory.CreateScope();
 
         var db = scope.ServiceProvider
             .GetRequiredService<ControlReactorDbContext>();
 
-        var player = await db.JugadoresPartida
-            .FirstOrDefaultAsync(
-                j => j.IdJugadorPartida == session.PlayerMatchId,
-                cancellationToken);
+        string? invalidReason = null;
+        int matchId = 0;
+        int playerMatchId = 0;
+        int userId = 0;
+        int score = 0;
+        int remainingEnergy = 0;
+        bool depleted = false;
 
-        if (player == null || !player.EnSala)
-            return;
-
-        var match = await db.Partidas
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                p => p.IdPartida == player.IdPartida,
-                cancellationToken);
-
-        if (match == null ||
-            match.Estado != "EN_CURSO" ||
-            match.CodigoSala != session.RoomCode)
-            return;
-
-        if (connection.IdJugadorPartida != player.IdJugadorPartida ||
-            connection.IdUsuario != player.IdUsuario)
-            return;
-
-        if (!ReactorConfiguration.TryGet(
-            match.IdEscenario, out ReactorData reactor))
-            return;
-
-        float dx = connection.X - reactor.X;
-        float dy = connection.Y - reactor.Y;
-
-        if (dx * dx + dy * dy >
-            reactor.Radius * reactor.Radius)
-            return;
-
-        if (!_energy.IsAvailable(match.IdPartida))
-            return;
-
-        if (!_sessions.IsActive(session))
-            return;
-
-        // Award at most one point for this processing interval.
-        int newScore = player.Puntaje + 1;
-
-        if (match.TipoFinalizacion == "PUNTOS" &&
-            match.PuntajeObjetivo.HasValue)
+        await using (var transaction =
+            await db.Database.BeginTransactionAsync(
+                IsolationLevel.Serializable,
+                cancellationToken))
         {
-            newScore = Math.Min(
-                newScore,
-                match.PuntajeObjetivo.Value);
+            var player = await db.JugadoresPartida
+                .FirstOrDefaultAsync(
+                    p => p.IdJugadorPartida == session.PlayerMatchId,
+                    cancellationToken);
+
+            if (player == null ||
+                !player.EnSala ||
+                connection.IdJugadorPartida != player.IdJugadorPartida ||
+                connection.IdUsuario != player.IdUsuario)
+            {
+                invalidReason = "Jugador no válido.";
+            }
+            else
+            {
+                var match = await db.Partidas
+                    .FirstOrDefaultAsync(
+                        p => p.IdPartida == player.IdPartida,
+                        cancellationToken);
+
+                if (match == null ||
+                    match.Estado != "EN_CURSO" ||
+                    match.CodigoSala != session.RoomCode)
+                {
+                    invalidReason = "La partida no está activa.";
+                }
+                else if (!ReactorConfiguration.TryGet(
+                    match.IdEscenario,
+                    out ReactorData reactor))
+                {
+                    invalidReason = "Reactor no configurado.";
+                }
+                else
+                {
+                    float dx = connection.X - reactor.X;
+                    float dy = connection.Y - reactor.Y;
+
+                    bool positionValid =
+                        connection.HasReceivedPosition &&
+                        float.IsFinite(connection.X) &&
+                        float.IsFinite(connection.Y) &&
+                        dx * dx + dy * dy <=
+                        reactor.Radius * reactor.Radius;
+
+                    if (!positionValid)
+                    {
+                        invalidReason = "Te alejaste del reactor.";
+                    }
+                    else if (match.EnergiaRestante <= 0 ||
+                             match.ReactorRechargeReadyAtUtc != null)
+                    {
+                        invalidReason = "El reactor está recargando.";
+                    }
+                    else if (
+                        match.TipoFinalizacion == "PUNTOS" &&
+                        match.PuntajeObjetivo.HasValue &&
+                        player.Puntaje >= match.PuntajeObjetivo.Value)
+                    {
+                        invalidReason = "Alcanzaste el puntaje objetivo.";
+                    }
+                    else if (!_sessions.IsActive(session))
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        match.EnergiaRestante--;
+                        player.Puntaje++;
+
+                        if (match.EnergiaRestante == 0)
+                        {
+                            depleted = true;
+                            match.ReactorRechargeReadyAtUtc =
+                                DateTime.UtcNow.Add(RechargeDuration);
+                        }
+
+                        await db.SaveChangesAsync(cancellationToken);
+                        await transaction.CommitAsync(cancellationToken);
+
+                        matchId = match.IdPartida;
+                        playerMatchId = player.IdJugadorPartida;
+                        userId = player.IdUsuario;
+                        score = player.Puntaje;
+                        remainingEnergy = match.EnergiaRestante;
+                    }
+                }
+            }
         }
 
-        if (newScore == player.Puntaje)
-            return;
-
-        player.Puntaje = newScore;
-
-        await db.SaveChangesAsync(cancellationToken);
-
-        if (!_energy.TryConsumeEnergy(
-            match.IdPartida, out int remainingEnergy))
+        if (invalidReason != null)
         {
-            _logger.LogError(
-                "La energía se agotó después de registrar el punto en la partida {MatchId}",
-                match.IdPartida);
+            await StopInvalidSessionAsync(
+                session, connection, invalidReason);
             return;
         }
 
-        _lastAward[key] = now;
+        if (matchId == 0)
+            return;
 
-        var update = new ServerMessage
-        {
-            Type = "score_updated",
-            RoomCode = session.RoomCode,
-            IdJugadorPartida = player.IdJugadorPartida,
-            IdUsuario = player.IdUsuario,
-            Puntaje = player.Puntaje
-        };
+        _lastAward[key] = DateTimeOffset.UtcNow;
 
-        foreach (var recipient in connections)
+        await BroadcastAsync(
+            session.RoomCode,
+            new ServerMessage
+            {
+                Type = "extraction_updated",
+                RoomCode = session.RoomCode,
+                IdJugadorPartida = playerMatchId,
+                IdUsuario = userId,
+                Puntaje = score,
+                EnergiaRestante = remainingEnergy
+            },
+            cancellationToken);
+
+        if (depleted)
         {
-            await recipient.SendAsync(update);
+            var stoppedSessions =
+                _sessions.StopRoom(session.RoomCode);
+
+            foreach (var stopped in stoppedSessions)
+            {
+                var recipient = connections.FirstOrDefault(
+                    c => c.PlayerId == stopped.PlayerId);
+
+                if (recipient != null)
+                {
+                    await SendSafelyAsync(
+                        recipient,
+                        new ServerMessage
+                        {
+                            Type = "extract_stopped",
+                            RoomCode = session.RoomCode,
+                            Message = "El reactor está recargando."
+                        });
+                }
+            }
         }
 
         _logger.LogInformation(
-            "Extracción: jugador {PlayerId}, puntaje {Score}, energía restante {Energy}",
+            "Partida {MatchId}: jugador {PlayerId}, puntos {Score}, energía {Energy}",
+            matchId,
             session.PlayerId,
-            player.Puntaje,
+            score,
             remainingEnergy);
+    }
+
+    private async Task ProcessRechargesAsync(
+        CancellationToken cancellationToken)
+    {
+        using var scope = _scopeFactory.CreateScope();
+
+        var db = scope.ServiceProvider
+            .GetRequiredService<ControlReactorDbContext>();
+
+        DateTime now = DateTime.UtcNow;
+
+        var readyMatches = await db.Partidas
+            .AsNoTracking()
+            .Where(p =>
+                p.Estado == "EN_CURSO" &&
+                p.EnergiaRestante == 0 &&
+                p.ReactorRechargeReadyAtUtc != null &&
+                p.ReactorRechargeReadyAtUtc <= now)
+            .Select(p => new
+            {
+                p.IdPartida,
+                p.CodigoSala
+            })
+            .ToListAsync(cancellationToken);
+
+        foreach (var match in readyMatches)
+        {
+            int updated = await db.Partidas
+                .Where(p =>
+                    p.IdPartida == match.IdPartida &&
+                    p.Estado == "EN_CURSO" &&
+                    p.EnergiaRestante == 0 &&
+                    p.ReactorRechargeReadyAtUtc != null &&
+                    p.ReactorRechargeReadyAtUtc <= now)
+                .ExecuteUpdateAsync(
+                    setters => setters
+                        .SetProperty(
+                            p => p.EnergiaRestante, MaxEnergy)
+                        .SetProperty(
+                            p => p.ReactorRechargeReadyAtUtc,
+                            (DateTime?)null),
+                    cancellationToken);
+
+            if (updated != 1 ||
+                string.IsNullOrWhiteSpace(match.CodigoSala))
+                continue;
+
+            await BroadcastAsync(
+                match.CodigoSala,
+                new ServerMessage
+                {
+                    Type = "reactor_recharged",
+                    RoomCode = match.CodigoSala,
+                    EnergiaRestante = MaxEnergy,
+                    Message = "El reactor volvió a estar disponible."
+                },
+                cancellationToken);
+
+            _logger.LogInformation(
+                "Reactor recargado en partida {MatchId}",
+                match.IdPartida);
+        }
+    }
+
+    private async Task StopInvalidSessionAsync(
+        ExtractionSession session,
+        ClientConnection connection,
+        string reason)
+    {
+        if (!_sessions.TryStopSession(session))
+            return;
+
+        await SendSafelyAsync(
+            connection,
+            new ServerMessage
+            {
+                Type = "extract_stopped",
+                RoomCode = session.RoomCode,
+                Message = reason
+            });
+    }
+
+    private async Task BroadcastAsync(
+        string roomCode,
+        ServerMessage message,
+        CancellationToken cancellationToken)
+    {
+        foreach (var connection in
+            _groups.ObtenerConexionesSala(roomCode))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            await SendSafelyAsync(connection, message);
+        }
+    }
+
+    private async Task SendSafelyAsync(
+        ClientConnection connection,
+        ServerMessage message)
+    {
+        try
+        {
+            await connection.SendAsync(message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(
+                ex, "No se pudo enviar mensaje al jugador");
+        }
     }
 
     private static string GetSessionKey(

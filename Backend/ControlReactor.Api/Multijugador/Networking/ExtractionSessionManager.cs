@@ -76,19 +76,43 @@ public sealed class ExtractionSessionManager
         }
     }
 
+    public bool TryStopSession(ExtractionSession session)
+    {
+        lock (_sync)
+        {
+            if (!_activeSessions.TryGetValue(
+                session.PlayerId, out var current))
+                return false;
+
+            if (current.ExtractionId != session.ExtractionId)
+                return false;
+
+            return _activeSessions.Remove(session.PlayerId);
+        }
+    }
+
+    public List<ExtractionSession> StopRoom(string roomCode)
+    {
+        lock (_sync)
+        {
+            var stopped = _activeSessions.Values
+                .Where(s => s.RoomCode == roomCode)
+                .ToList();
+
+            foreach (var session in stopped)
+                _activeSessions.Remove(session.PlayerId);
+
+            return stopped;
+        }
+    }
+
     public void StopAll(ClientConnection connection)
     {
         lock (_sync)
         {
             _activeSessions.Remove(connection.PlayerId);
-
-            // Clear IDs associated with this disconnected connection.
-            _usedExtractionIds.RemoveWhere(id =>
-                id.StartsWith(connection.PlayerId + ":",
-                    StringComparison.Ordinal));
         }
     }
-
 
     public List<ExtractionSession> GetActiveSessions()
     {
@@ -104,10 +128,9 @@ public sealed class ExtractionSessionManager
         {
             return _activeSessions.TryGetValue(
                 session.PlayerId,
-                out var currentSession
+                out var current
             ) &&
-            currentSession.ExtractionId == session.ExtractionId;
+            current.ExtractionId == session.ExtractionId;
         }
     }
-
 }

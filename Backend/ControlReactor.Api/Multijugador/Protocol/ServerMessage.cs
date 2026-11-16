@@ -25,6 +25,8 @@ public class ServerMessage
 
     public int? Puntaje { get; set; }
 
+    public int? EnergiaRestante { get; set; }
+
     // Clasificación final de todos los participantes.
     public List<ResultadoJugador>? Resultados { get; set; }
 }
