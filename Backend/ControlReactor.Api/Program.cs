@@ -1219,6 +1219,26 @@ app.MapPost("/api/salas/salir", async (
     return Results.Ok(new { mensaje = resultado.Mensaje });
 });
 
+ // Permite abandonar una partida que ya comenzó.
+app.MapPost("/api/salas/abandonar-partida", async (
+    UnirseSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.AbandonarPartidaAsync(
+        datos.IdUsuario,
+        datos.CodigoSala);
+
+    if (!resultado.Exito)
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
 
 // Guarda la configuración de una partida desde el lobby.
 app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
