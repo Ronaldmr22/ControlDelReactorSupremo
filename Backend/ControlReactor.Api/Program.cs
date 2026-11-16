@@ -82,6 +82,7 @@ builder.Services.AddScoped<ServicioLogros>();
 
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
+builder.Services.AddHostedService<ExtractionProcessor>();
 
 builder.Services.AddHostedService<MonitorPuertasArena>();
 
@@ -108,6 +109,7 @@ builder.Services.AddDbContext<ControlReactorDbContext>(options =>options.UseNpgs
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ConnectionGroupManager>();
+builder.Services.AddSingleton<ExtractionSessionManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
 
 // Servicios de administración de guardianes por sala

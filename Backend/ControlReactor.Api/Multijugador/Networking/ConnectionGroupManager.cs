@@ -119,7 +119,10 @@ public sealed class ConnectionGroupManager
 
             connection.X = x;
             connection.Y = y;
+
+            connection.HasReceivedPosition = true;
             connection.UltimaActualizacionPosicion = DateTime.UtcNow;
+
             Console.WriteLine(
                 $"POSICION RECIBIDA BACKEND: " +
                 $"X={connection.X:F2}, Y={connection.Y:F2}"

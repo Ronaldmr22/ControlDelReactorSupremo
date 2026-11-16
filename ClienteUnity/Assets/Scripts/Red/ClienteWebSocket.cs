@@ -77,7 +77,7 @@ public class ClienteWebSocket : MonoBehaviour
         websocket.OnMessage += (bytes) =>
         {
             string mensaje = System.Text.Encoding.UTF8.GetString(bytes);
-
+            
             if (!mensaje.Contains("\"type\":\"player_moved\"") &&
                 !mensaje.Contains("\"type\":\"guardians_updated\""))
             {

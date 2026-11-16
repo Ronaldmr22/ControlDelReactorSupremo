@@ -157,6 +157,10 @@ namespace ControlReactor.Datos.Migrations
                     b.Property<string>("CodigoSala")
                         .HasColumnType("text");
 
+                    b.Property<int>("EnergiaRestante")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(100);
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasColumnType("text");
@@ -168,7 +172,8 @@ namespace ControlReactor.Datos.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("IdEscenario")
-                        .HasColumnType("integer");
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
 
                     b.Property<int?>("IdUsuarioCreador")
                         .HasColumnType("integer");
@@ -178,6 +183,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<int?>("PuntajeObjetivo")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReactorRechargeReadyAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("SegundosCongelamiento")
                         .HasColumnType("integer");
