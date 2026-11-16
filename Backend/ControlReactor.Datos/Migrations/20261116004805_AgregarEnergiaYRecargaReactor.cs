@@ -9,6 +9,7 @@ namespace ControlReactor.Datos.Migrations
     public partial class AgregarEnergiaYRecargaReactor : Migration
     {
 
+
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.AddColumn<int>(
@@ -17,13 +18,6 @@ namespace ControlReactor.Datos.Migrations
                 type: "integer",
                 nullable: false,
                 defaultValue: 100);
-
-            migrationBuilder.AddColumn<int>(
-                name: "IdEscenario",
-                table: "Partidas",
-                type: "integer",
-                nullable: false,
-                defaultValue: 1);
 
             migrationBuilder.AddColumn<DateTime>(
                 name: "ReactorRechargeReadyAtUtc",
@@ -36,10 +30,6 @@ namespace ControlReactor.Datos.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "EnergiaRestante",
-                table: "Partidas");
-
-            migrationBuilder.DropColumn(
-                name: "IdEscenario",
                 table: "Partidas");
 
             migrationBuilder.DropColumn(

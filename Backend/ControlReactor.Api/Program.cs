@@ -108,8 +108,6 @@ builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<ExtractionSessionManager>();
 builder.Services.AddSingleton<WebSocketHandler>();
 
-builder.Services.AddHostedService<ExtractionProcessor>();
-
 // Registrar servicios de autorización
 builder.Services.AddAuthorization();
 
