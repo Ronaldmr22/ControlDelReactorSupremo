@@ -119,14 +119,14 @@ public class SalaUI : MonoBehaviour
             }
         }
 
-        textoEstadoSala.text = cantidad < 2
+        textoEstadoSala.text = cantidad < 1
             ? $"Esperando jugador... ({cantidad}/3)"
             : $"Participantes en la sala: {cantidad}/3";
 
         botonConfiguracion.SetActive(true);
 
         botonIniciar.interactable = soyCreador &&
-        cantidad >= 2 &&
+        cantidad >= 1 &&
         sala.estado == "ESPERANDO" &&
         !ocupado &&
         !entrandoPartida;
@@ -271,7 +271,7 @@ public class SalaUI : MonoBehaviour
             sala.idUsuarioCreador == SesionUsuario.IdUsuario;
 
         if (!soyCreador || sala.participantes == null ||
-            sala.participantes.Length < 2)
+            sala.participantes.Length < 1)
             return;
 
         CambiarOcupado(true);
