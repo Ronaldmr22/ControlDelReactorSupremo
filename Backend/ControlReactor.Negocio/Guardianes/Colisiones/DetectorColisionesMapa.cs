@@ -36,13 +36,16 @@ namespace ControlReactor.Negocio.Guardianes.Colisiones
             return dentro;
         }
 
+        
         public static bool PuntoEnObstaculo(
             float x,
             float y,
             DatosColisionesMapa mapa)
         {
-            if (mapa == null || mapa.Obstaculos == null)
+            if (mapa?.Obstaculos == null)
                 return false;
+
+            bool dentro = false;
 
             foreach (ObstaculoMapa obstaculo in mapa.Obstaculos)
             {
@@ -51,12 +54,13 @@ namespace ControlReactor.Negocio.Guardianes.Colisiones
                     y,
                     obstaculo.Vertices))
                 {
-                    return true;
+                    dentro = !dentro;
                 }
             }
 
-            return false;
+            return dentro;
         }
+
 
         public static bool PosicionLibre(
             float x,
@@ -85,6 +89,17 @@ namespace ControlReactor.Negocio.Guardianes.Colisiones
             float abajo = centroY - mitadAlto;
             float arriba = centroY + mitadAlto;
 
+            // Comprobar esquinas y centro del guardián
+            if (PuntoEnObstaculo(izquierda, abajo, mapa) ||
+                PuntoEnObstaculo(izquierda, arriba, mapa) ||
+                PuntoEnObstaculo(derecha, abajo, mapa) ||
+                PuntoEnObstaculo(derecha, arriba, mapa) ||
+                PuntoEnObstaculo(centroX, centroY, mapa))
+            {
+                return true;
+            }
+
+            // Comprobar si el cuerpo toca algún contorno.
             foreach (ObstaculoMapa obstaculo in mapa.Obstaculos)
             {
                 var vertices = obstaculo.Vertices;
@@ -92,31 +107,6 @@ namespace ControlReactor.Negocio.Guardianes.Colisiones
                 if (vertices == null || vertices.Count < 3)
                     continue;
 
-                // Comprobar si una esquina del guardián
-                // está dentro del obstáculo.
-                if (PuntoDentroPoligono(izquierda, abajo, vertices) ||
-                    PuntoDentroPoligono(izquierda, arriba, vertices) ||
-                    PuntoDentroPoligono(derecha, abajo, vertices) ||
-                    PuntoDentroPoligono(derecha, arriba, vertices))
-                {
-                    return true;
-                }
-
-                // Comprobar si un vértice del obstáculo
-                // está dentro del cuerpo del guardián.
-                foreach (VerticeMapa vertice in vertices)
-                {
-                    if (vertice.X >= izquierda &&
-                        vertice.X <= derecha &&
-                        vertice.Y >= abajo &&
-                        vertice.Y <= arriba)
-                    {
-                        return true;
-                    }
-                }
-
-                // Comprobar si los bordes del guardián
-                // se cruzan con los bordes del obstáculo.
                 for (int i = 0; i < vertices.Count; i++)
                 {
                     VerticeMapa a = vertices[i];
@@ -137,17 +127,16 @@ namespace ControlReactor.Negocio.Guardianes.Colisiones
 
                         SegmentosSeCruzan(
                             a.X, a.Y, b.X, b.Y,
-                            izquierda, arriba, izquierda, abajo)
-                    )
+                            izquierda, arriba, izquierda, abajo))
                     {
                         return true;
                     }
                 }
-
             }
 
             return false;
         }
+
         private static bool SegmentosSeCruzan(
             float ax, float ay,
             float bx, float by,

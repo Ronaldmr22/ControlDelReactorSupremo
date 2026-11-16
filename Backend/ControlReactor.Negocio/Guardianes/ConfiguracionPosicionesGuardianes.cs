@@ -19,7 +19,7 @@ namespace ControlReactor.Negocio.Guardianes
                 case 2:
                     return new (float X, float Y)[]
                     {
-                        (-0.2674904f, -4.92711f),
+                        (1.592509f, -4.92711f),
                         (-15.91749f, -2.01711f),
                         (-8.397491f, -8.27711f),
                         (-9.197491f, -0.04710996f)
