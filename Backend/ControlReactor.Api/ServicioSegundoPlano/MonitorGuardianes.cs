@@ -164,6 +164,25 @@ namespace ControlReactor.Api.ServicioSegundoPlano
                             jugador.IdJugadorPartida.Value,
                             -10
                         );
+                    // Notificar a todos los jugadores el nuevo puntaje.
+                    if (puntajeActualizado.HasValue && jugador.IdUsuario.HasValue)
+                    {
+                        var mensajePuntaje = new ServerMessage
+                        {
+                            Type = "score_updated",
+                            RoomCode = codigoSala,
+                            IdUsuario = jugador.IdUsuario.Value,
+                            IdJugadorPartida = jugador.IdJugadorPartida.Value,
+                            Puntaje = puntajeActualizado.Value
+                        };
+
+                        var conexiones = _groupManager.ObtenerConexionesSala(codigoSala);
+
+                        foreach (var conexion in conexiones)
+                        {
+                            await conexion.SendAsync(mensajePuntaje);
+                        }
+                    }
 
                     _logger.LogInformation(
                         "Guardián {GuardianId} atacó al jugador {PlayerId}. Puntaje actualizado: {Puntaje}",
