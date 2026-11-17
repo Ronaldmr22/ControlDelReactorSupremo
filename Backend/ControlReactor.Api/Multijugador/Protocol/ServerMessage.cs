@@ -30,6 +30,10 @@ public class ServerMessage
 
     public int? EnergiaRestante { get; set; }
 
+    // Identificador compartido para la pastilla de energía adicional.
+    public string? BonusId { get; set; }
+    public int? BonusDuration { get; set; }
+
     // Clasificación final de todos los participantes.
     public List<ResultadoJugador>? Resultados { get; set; }
     // Posiciones actuales de los guardianes.
