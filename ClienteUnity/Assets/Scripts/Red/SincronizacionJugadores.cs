@@ -63,10 +63,7 @@ public class SincronizacionJugadores : MonoBehaviour
 
         Vector3 posicion = generador.JugadorLocal.position;
 
-        Debug.Log(
-            $"POSICION ENVIADA UNITY: " +
-            $"X={posicion.x:F2}, Y={posicion.y:F2}"
-        );
+        Debug.Log($"POSICION ENVIADA UNITY: " +$"X={posicion.x:F2}, Y={posicion.y:F2}");
 
         ultimaPosicionEnviada = posicion;
 
