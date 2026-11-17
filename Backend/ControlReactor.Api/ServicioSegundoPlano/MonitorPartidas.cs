@@ -81,6 +81,7 @@ namespace ControlReactor.Api.ServicioSegundoPlano
 
                                     // Crear la clasificación final de todos los jugadores.
                                     var resultados = jugadores
+                                        .OrderByDescending(j => j.Puntaje)
                                         .Select((jugador, indice) => new ResultadoJugador
                                         {
                                             Posicion = indice + 1,
@@ -90,6 +91,7 @@ namespace ControlReactor.Api.ServicioSegundoPlano
                                             EsGanador = jugador.EsGanador
                                         })
                                         .ToList();
+
 
                                     var mensaje = new ServerMessage
                                     {

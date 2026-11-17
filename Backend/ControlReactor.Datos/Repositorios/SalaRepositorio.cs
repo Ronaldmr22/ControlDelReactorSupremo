@@ -266,6 +266,39 @@ namespace ControlReactor.Datos.Repositorios
             return (true, "Saliste de la sala.");
         }
 
+        public async Task<(bool Exito, string Mensaje)> AbandonarPartidaAsync(
+            int idUsuario, string codigoSala)
+        {
+            await using var transaccion =
+                await _context.Database.BeginTransactionAsync();
+
+            var partida = await BuscarSalaBloqueadaAsync(codigoSala);
+
+            if (partida == null)
+                return (false, "La partida no existe.");
+
+            if (partida.Estado != "EN_CURSO")
+                return (false, "La partida no está en curso.");
+
+            var jugador = await _context.JugadoresPartida
+                .FirstOrDefaultAsync(j =>
+                    j.IdPartida == partida.IdPartida &&
+                    j.IdUsuario == idUsuario);
+
+            if (jugador == null || !jugador.EnSala)
+                return (false, "El jugador no está activo en la partida.");
+
+            // Marcar que el jugador abandonó la partida.
+            jugador.EnSala = false;
+            jugador.UltimaActividadUtc = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
+
+            return (true, "Abandonaste la partida correctamente.");
+        }
+
+
         public async Task<(bool Exito, string Mensaje)> IniciarPartidaAsync(
         int idUsuario, string codigoSala)
         {

@@ -1226,6 +1226,26 @@ app.MapPost("/api/salas/salir", async (
     return Results.Ok(new { mensaje = resultado.Mensaje });
 });
 
+ // Permite abandonar una partida que ya comenzó.
+app.MapPost("/api/salas/abandonar-partida", async (
+    UnirseSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.AbandonarPartidaAsync(
+        datos.IdUsuario,
+        datos.CodigoSala);
+
+    if (!resultado.Exito)
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
 
 // Guarda la configuración de una partida desde el lobby.
 app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
@@ -1398,7 +1418,7 @@ app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
     if (partida.Estado != "FINALIZADA")
         return Results.Conflict(new { mensaje = "La partida no ha finalizado." });
 
-    var jugadores = await jugadorRepositorio.ObtenerPorPartidaAsync(idPartida);
+    var jugadores = (await jugadorRepositorio.ObtenerPorPartidaAsync(idPartida)).OrderByDescending(j => j.Puntaje).ToList();
     var ganador = jugadores.FirstOrDefault(j => j.EsGanador);
 
     if (ganador == null)
@@ -1434,6 +1454,10 @@ app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
     {
         idPartida = partida.IdPartida,
         estado = partida.Estado,
+        duracionSegundos = partida.FechaFin.HasValue
+            ? (int)(partida.FechaFin.Value - partida.FechaInicio).TotalSeconds
+            : 0,
+
 
         // Mantener los datos originales del ganador.
         ganador = new

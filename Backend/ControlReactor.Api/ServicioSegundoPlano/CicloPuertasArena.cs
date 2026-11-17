@@ -7,11 +7,25 @@ internal sealed class CicloPuertasArena
     private bool solicitarCierre = true;
     private DateTimeOffset siguienteCambio;
 
-    public CicloPuertasArena(DateTimeOffset ahora)
+    private readonly (int Min, int Max) segundosCerradas;
+    private readonly (int Min, int Max) segundosAbiertas;
+
+    public CicloPuertasArena(
+        DateTimeOffset ahora,
+        (int Min, int Max)? segundosCerradas = null,
+        (int Min, int Max)? segundosAbiertas = null)
     {
-        siguienteCambio = ahora.AddSeconds(Random.Shared.Next(15, 31));
+        this.segundosCerradas = segundosCerradas ?? (15, 30);
+        this.segundosAbiertas = segundosAbiertas ?? (5, 10);
+
+        siguienteCambio = ahora.AddSeconds(
+            DuracionAleatoria(this.segundosCerradas));
     }
 
+    private static int DuracionAleatoria((int Min, int Max) rango)
+    {
+        return Random.Shared.Next(rango.Min, rango.Max + 1);
+    }
     // true: pedir cierre; false: pedir apertura; null: todavía no hay cambio.
     public bool? Revisar(DateTimeOffset ahora)
     {
@@ -20,9 +34,8 @@ internal sealed class CicloPuertasArena
 
         solicitarCierre = !solicitarCierre;
 
-        int segundos = solicitarCierre
-            ? Random.Shared.Next(15, 31)
-            : Random.Shared.Next(5, 11);
+        int segundos = DuracionAleatoria(
+            solicitarCierre ? segundosCerradas : segundosAbiertas);
 
         siguienteCambio = ahora.AddSeconds(segundos);
         return solicitarCierre;
