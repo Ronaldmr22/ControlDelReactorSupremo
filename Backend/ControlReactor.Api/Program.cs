@@ -418,10 +418,56 @@ app.MapGet("/api/usuarios/google-resultado",
         );
 
         // Redirigir el navegador hacia Unity
-        string urlUnity = "http://127.0.0.1:8765/"
-            + "?code=" + Uri.EscapeDataString(codigo);
+        return Results.Content(
+            """
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>Inicio de sesión exitoso</title>
+            </head>
+            <body style="font-family: Arial; text-align: center; padding-top: 80px;">
+                <h2>Inicio de sesión exitoso</h2>
+                <p>Ya puedes regresar a Control del Reactor.</p>
+                <p>Puedes cerrar esta pestaña.</p>
+            </body>
+            </html>
+            """,
+            "text/html; charset=utf-8"
+        );
+    });
 
-        return Results.Redirect(urlUnity);
+// Unity consulta si Google terminó de autenticar al usuario
+app.MapPost("/api/usuarios/google-consultar",
+    (ConsultaGoogle solicitud, ServicioCodigoLoginGoogle servicioCodigos) =>
+    {
+        if (string.IsNullOrWhiteSpace(solicitud.IdSolicitud) ||
+            string.IsNullOrWhiteSpace(solicitud.Verificador))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "Faltan datos de autenticación."
+            });
+        }
+
+        string? codigo = servicioCodigos.ConsultarCodigoSeguro(
+            solicitud.IdSolicitud,
+            solicitud.Verificador);
+
+        if (codigo == null)
+        {
+            return Results.Ok(new
+            {
+                completado = false,
+                codigo = (string?)null
+            });
+        }
+
+        return Results.Ok(new
+        {
+            completado = true,
+            codigo
+        });
     });
 
 app.MapPost("/api/usuarios/google-canjear", async (
@@ -1464,8 +1510,12 @@ app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
         // Agregar las posiciones de todos los participantes.
         clasificacion
     });
+    
 });
 
-
-
 app.Run();
+public class ConsultaGoogle
+{
+    public string IdSolicitud { get; set; } = "";
+    public string Verificador { get; set; } = "";
+}
