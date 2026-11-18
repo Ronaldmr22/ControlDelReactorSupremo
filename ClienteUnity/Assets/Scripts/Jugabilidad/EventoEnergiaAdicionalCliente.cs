@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using UnityEngine;
 
-// Representa la cápsula y solicita su recolección; nunca asigna puntos localmente.
 public class EventoEnergiaAdicionalCliente : MonoBehaviour
 {
     [Header("Referencias")]
@@ -99,7 +98,6 @@ public class EventoEnergiaAdicionalCliente : MonoBehaviour
             recolectable.Inicializar(this, bonusActual);
             interfazEvento?.MostrarEnergiaAdicional();
 
-            // Respaldo local: la cápsula no queda visible si se corta la conexión.
             desaparicionLocal = StartCoroutine(
                 QuitarAlExpirar(mensaje.bonusDuration, bonusActual));
         }

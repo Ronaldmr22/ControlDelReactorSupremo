@@ -30,6 +30,7 @@ private readonly ExtractionSessionManager _extractionManager;
 private readonly EnergyBonusManager _energyBonuses;
 private readonly GuardianSurgeManager _guardianSurges;
 private readonly ReactorOverloadManager _overloads;
+private readonly CreativeEventsManager _creativeEvents;
 
 public WebSocketHandler(
         ConnectionGroupManager groupManager,
@@ -37,7 +38,8 @@ public WebSocketHandler(
         ExtractionSessionManager extractionManager,
         EnergyBonusManager energyBonuses,
         GuardianSurgeManager guardianSurges,
-        ReactorOverloadManager overloads)
+        ReactorOverloadManager overloads,
+        CreativeEventsManager creativeEvents)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
@@ -45,6 +47,7 @@ public WebSocketHandler(
         _energyBonuses = energyBonuses;
         _guardianSurges = guardianSurges;
         _overloads = overloads;
+        _creativeEvents = creativeEvents;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -877,6 +880,28 @@ public WebSocketHandler(
                         RoomCode = roomCode,
                         OverloadDuration = remaining,
                         Message = "El reactor está en sobrecarga. No entrega puntos."
+                    });
+                }
+            }
+
+            // CA-22.4: quien entra tarde también ve las arenas o el x2 activo.
+            var creative = _creativeEvents.GetActiveForRoom(roomCode);
+            if (creative != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (creative.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = creative.Kind == CreativeEventKind.Sand
+                            ? "creative_sand_started" : "reactor_double_started",
+                        RoomCode = roomCode,
+                        CreativeDuration = remaining,
+                        SandZones = creative.Kind == CreativeEventKind.Sand
+                            ? creative.SandZones.ToList() : null,
+                        Message = "Evento creativo CA-22.4 activo."
                     });
                 }
             }

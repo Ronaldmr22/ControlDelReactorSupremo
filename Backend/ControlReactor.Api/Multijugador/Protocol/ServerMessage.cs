@@ -1,5 +1,6 @@
 
 using ControlReactor.Api.Multijugador.Players;
+using ControlReactor.Api.Multijugador.Events;
 
 namespace ControlReactor.Api.Multijugador.Protocol;
 
@@ -39,6 +40,10 @@ public class ServerMessage
 
     // Tiempo restante de sobrecarga del reactor (CA-22.3).
     public int? OverloadDuration { get; set; }
+
+    // CA-22.4: dos eventos creativos y cuatro zonas sincronizadas.
+    public int? CreativeDuration { get; set; }
+    public List<SandZonePosition>? SandZones { get; set; }
 
     // Clasificación final de todos los participantes.
     public List<ResultadoJugador>? Resultados { get; set; }
