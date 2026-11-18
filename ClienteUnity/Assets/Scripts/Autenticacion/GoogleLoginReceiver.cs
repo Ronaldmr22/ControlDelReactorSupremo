@@ -1,24 +1,36 @@
 
 using System;
 using System.Collections;
-using System.Net;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
 using System.Security.Cryptography;
+using System.Text;
+using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 public class GoogleLoginReceiver : MonoBehaviour
 {
-    private HttpListener listener;
+    private const string UrlBase =
+        "https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net";
 
     public string IdSolicitud { get; private set; }
-
     public string Verificador { get; private set; }
     public string Desafio { get; private set; }
-    private string codigoPendiente;
-    private readonly object bloqueoCodigo = new object();
+
+    private Coroutine consultaActiva;
+
+    [Serializable]
+    public class SolicitudConsultaGoogle
+    {
+        public string idSolicitud;
+        public string verificador;
+    }
+
+    [Serializable]
+    public class RespuestaConsultaGoogle
+    {
+        public bool completado;
+        public string codigo;
+    }
 
     [Serializable]
     public class SolicitudCanjeGoogle
@@ -45,6 +57,8 @@ public class GoogleLoginReceiver : MonoBehaviour
 
     public void PrepararSolicitud()
     {
+        DetenerConsulta();
+
         IdSolicitud = Guid.NewGuid().ToString("N");
 
         byte[] bytes = new byte[32];
@@ -67,54 +81,68 @@ public class GoogleLoginReceiver : MonoBehaviour
 
     public void IniciarEscucha()
     {
-        if (listener != null)
+        DetenerConsulta();
+
+        if (string.IsNullOrEmpty(IdSolicitud) ||
+            string.IsNullOrEmpty(Verificador))
+        {
+            Debug.LogError("Primero debes preparar la solicitud Google.");
             return;
+        }
 
-        listener = new HttpListener();
-        listener.Prefixes.Add("http://127.0.0.1:8765/");
-        listener.Start();
-
-        Debug.Log("Esperando respuesta de Google...");
-
-        _ = EscucharRespuesta();
+        consultaActiva = StartCoroutine(ConsultarGoogle());
     }
 
-    private async Task EscucharRespuesta()
+    private IEnumerator ConsultarGoogle()
     {
-        try
+        float tiempoTranscurrido = 0f;
+
+        while (tiempoTranscurrido < 120f)
         {
-            HttpListenerContext contexto = await listener.GetContextAsync();
-
-            string codigo = contexto.Request.QueryString["code"];
-
-            if (!string.IsNullOrWhiteSpace(codigo))
+            var datos = new SolicitudConsultaGoogle
             {
-                lock (bloqueoCodigo)
+                idSolicitud = IdSolicitud,
+                verificador = Verificador
+            };
+
+            string json = JsonUtility.ToJson(datos);
+
+            using (UnityWebRequest request = UnityWebRequest.Post(
+                UrlBase + "/api/usuarios/google-consultar",
+                json,
+                "application/json"))
+            {
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
                 {
-                    codigoPendiente = codigo;
+                    var respuesta =
+                        JsonUtility.FromJson<RespuestaConsultaGoogle>(
+                            request.downloadHandler.text);
+
+                    if (respuesta != null &&
+                        respuesta.completado &&
+                        !string.IsNullOrEmpty(respuesta.codigo))
+                    {
+                        yield return CanjearCodigo(respuesta.codigo);
+                        consultaActiva = null;
+                        yield break;
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning(
+                        "Esperando autenticación Google. HTTP: " +
+                        request.responseCode);
                 }
             }
 
-            string mensaje = "<html><body><h2>Ya puedes regresar al juego.</h2></body></html>";
-            byte[] respuesta = Encoding.UTF8.GetBytes(mensaje);
-
-            contexto.Response.ContentType = "text/html; charset=utf-8";
-            contexto.Response.ContentLength64 = respuesta.Length;
-
-            await contexto.Response.OutputStream.WriteAsync(
-                respuesta, 0, respuesta.Length);
-
-            contexto.Response.Close();
-
-            Debug.Log("Unity recibió la respuesta del navegador.");
-
-            // Todavía no utilizamos el código.
-            // Falta validarlo con el backend.
+            yield return new WaitForSecondsRealtime(1f);
+            tiempoTranscurrido += 1f;
         }
-        catch (Exception ex)
-        {
-            Debug.LogError("Error al recibir Google: " + ex.Message);
-        }
+
+        Debug.LogWarning("Tiempo de autenticación Google agotado.");
+        consultaActiva = null;
     }
 
     private IEnumerator CanjearCodigo(string codigo)
@@ -128,10 +156,10 @@ public class GoogleLoginReceiver : MonoBehaviour
 
         string json = JsonUtility.ToJson(datos);
 
-        string url = "https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net/api/usuarios/google-canjear";
-
-        using (UnityWebRequest request =
-            UnityWebRequest.Post(url, json, "application/json"))
+        using (UnityWebRequest request = UnityWebRequest.Post(
+            UrlBase + "/api/usuarios/google-canjear",
+            json,
+            "application/json"))
         {
             yield return request.SendWebRequest();
 
@@ -139,52 +167,36 @@ public class GoogleLoginReceiver : MonoBehaviour
             {
                 Debug.LogError(
                     "Error al validar Google.\n" +
-                    "Resultado: " + request.result + "\n" +
                     "HTTP: " + request.responseCode + "\n" +
-                    "Error: " + request.error + "\n" +
-                    "Respuesta: " + request.downloadHandler.text
-                );
+                    "Respuesta: " + request.downloadHandler.text);
 
                 yield break;
             }
 
-            var respuesta = JsonUtility.FromJson<RespuestaCanjeGoogle>(
-                request.downloadHandler.text);
+            var respuesta =
+                JsonUtility.FromJson<RespuestaCanjeGoogle>(
+                    request.downloadHandler.text);
 
             SesionUsuario.IdUsuario = respuesta.idUsuario;
             SesionUsuario.NombreUsuario = respuesta.nombreUsuario;
 
             Debug.Log("Google autenticado: " + respuesta.nombreUsuario);
+
             SceneManager.LoadScene("Lobby");
         }
     }
 
-    private void Update()
+    private void DetenerConsulta()
     {
-        string codigo = null;
-
-        lock (bloqueoCodigo)
+        if (consultaActiva != null)
         {
-            if (codigoPendiente != null)
-            {
-                codigo = codigoPendiente;
-                codigoPendiente = null;
-            }
-        }
-
-        if (!string.IsNullOrEmpty(codigo))
-        {
-            StartCoroutine(CanjearCodigo(codigo));
+            StopCoroutine(consultaActiva);
+            consultaActiva = null;
         }
     }
 
     private void OnDestroy()
     {
-        if (listener != null)
-        {
-            listener.Stop();
-            listener.Close();
-            listener = null;
-        }
+        DetenerConsulta();
     }
 }
