@@ -469,9 +469,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 222b248463e52204993b862030657a68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ZonaInteraccionReactor
-  generador: {fileID: 0}
+  generador: {fileID: 22930738}
   reactor: {fileID: 1440532409}
-  cliente: {fileID: 0}
+  cliente: {fileID: 464542369}
 --- !u!58 &217181651
 CircleCollider2D:
   m_ObjectHideFlags: 0
@@ -126927,6 +126927,7 @@ GameObject:
   - component: {fileID: 1440532411}
   - component: {fileID: 1440532410}
   - component: {fileID: 1440532409}
+  - component: {fileID: 1440532413}
   m_Layer: 0
   m_Name: ReactorCentral
   m_TagString: Untagged
@@ -126951,6 +126952,7 @@ MonoBehaviour:
   barraEnergia: {fileID: 561672510}
   colorDisponible: {r: 1, g: 1, b: 1, a: 1}
   colorAgotado: {r: 0.8627452, g: 0.1921569, b: 0.1960784, a: 1}
+  colorSobrecarga: {r: 1, g: 0.16, b: 0.16, a: 1}
 --- !u!61 &1440532410
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -127074,6 +127076,21 @@ Transform:
   - {fileID: 1080327321}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1440532413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1440532408}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e7ed408bd05e6142b79b31afd31a993, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ReactorNetworkSync
+  clienteWebSocket: {fileID: 464542369}
+  reactor: {fileID: 1440532409}
+  interfazEvento: {fileID: 1710576235}
 --- !u!1 &1493096069
 GameObject:
   m_ObjectHideFlags: 0
@@ -127705,8 +127722,10 @@ MonoBehaviour:
   textoEvento: {fileID: 2056043819}
   iconoEvento: {fileID: 2056043818}
   duracionMensaje: 5
+  colorTextoSobrecarga: {r: 1, g: 0.25, b: 0.25, a: 1}
   iconoEnergiaAdicional: {fileID: 21300000, guid: a80eb9fa17c694040a6b18400e4229db, type: 3}
   iconoGuardianes: {fileID: 1036655721, guid: 733c5a4fc521dc2429325c8340aa5626, type: 3}
+  iconoSobrecargaReactor: {fileID: 0}
 --- !u!1 &1722330689
 GameObject:
   m_ObjectHideFlags: 0
