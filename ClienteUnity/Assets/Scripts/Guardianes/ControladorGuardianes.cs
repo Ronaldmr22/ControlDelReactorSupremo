@@ -10,6 +10,8 @@ public class ControladorGuardianes : MonoBehaviour
     [SerializeField] private GameObject prefabGuardian;
     [Header("Jugador local")]
     [SerializeField] private GeneradorJugadores generador;
+    [Header("Interfaz de eventos especiales (CanvasMapa)")]
+    [SerializeField] private EventoEspecialUI interfazEvento;
 
     private readonly Dictionary<int, GameObject> guardianes = new();
     private readonly Dictionary<int, Vector2> destinosGuardianes = new();
@@ -35,6 +37,29 @@ public class ControladorGuardianes : MonoBehaviour
     {
         MensajeGuardianes mensaje =
             JsonUtility.FromJson<MensajeGuardianes>(json);
+
+        if (mensaje == null)
+            return;
+
+        if (mensaje.type == "guardian_surge_started")
+        {
+            if (interfazEvento != null)
+                interfazEvento.MostrarOleadaGuardianes(
+                    mensaje.guardianSurgeDuration > 0 ? mensaje.guardianSurgeDuration : 10);
+            else
+                Debug.LogWarning("Falta asignar EventoEspecialUI en ControladorGuardianes.");
+
+            return;
+        }
+
+        if (mensaje.type == "guardian_surge_ended")
+        {
+            if (interfazEvento != null)
+                interfazEvento.MostrarFinOleadaGuardianes();
+
+            return;
+        }
+
         if (mensaje != null && mensaje.type == "player_frozen")
         {
             MostrarDistanciasAlCongelar();
@@ -69,8 +94,11 @@ public class ControladorGuardianes : MonoBehaviour
             return;
         }
 
+        var idsEnServidor = new HashSet<int>();
+
         foreach (var datos in mensaje.guardians)
         {
+            idsEnServidor.Add(datos.id);
             Vector3 posicion = new Vector3(
                 datos.x,
                 datos.y,
@@ -90,6 +118,7 @@ public class ControladorGuardianes : MonoBehaviour
                 objeto.name = "Guardian_" + datos.id;
 
                 guardianes.Add(datos.id, objeto);
+                destinosGuardianes[datos.id] = new Vector2(datos.x, datos.y);
             }
             else
             {
@@ -100,6 +129,25 @@ public class ControladorGuardianes : MonoBehaviour
                     datos.y
                 );
             }
+        }
+
+        // El servidor es la autoridad: los cinco guardianes temporales deben
+        // desaparecer de Unity cuando ya no figuren en guardians_updated.
+        var idsEliminados = new List<int>();
+
+        foreach (int id in guardianes.Keys)
+        {
+            if (!idsEnServidor.Contains(id))
+                idsEliminados.Add(id);
+        }
+
+        foreach (int id in idsEliminados)
+        {
+            if (guardianes.TryGetValue(id, out GameObject objeto))
+                Destroy(objeto);
+
+            guardianes.Remove(id);
+            destinosGuardianes.Remove(id);
         }
 
     }
@@ -219,6 +267,7 @@ public class ControladorGuardianes : MonoBehaviour
     private class MensajeGuardianes
     {
         public string type;
+        public int guardianSurgeDuration;
         public PosicionGuardian[] guardians;
     }
 

@@ -4,6 +4,7 @@ using ControlReactor.Negocio.Interfaces;
 using ControlReactor.Api.Multijugador.Protocol;
 using System.Diagnostics;
 using ControlReactor.Negocio.Servicios;
+using ControlReactor.Api.Multijugador.Events;
 
 namespace ControlReactor.Api.ServicioSegundoPlano
 {
@@ -13,17 +14,20 @@ namespace ControlReactor.Api.ServicioSegundoPlano
         private readonly ILogger<MonitorGuardianes> _logger;
         private readonly ConnectionGroupManager _groupManager;
         private readonly IServiceScopeFactory _scopeFactory;
+        private readonly GuardianSurgeManager _surges;
 
     public MonitorGuardianes(
         AdministradorGuardianesPorSala administrador,
         ConnectionGroupManager groupManager,
         IServiceScopeFactory scopeFactory,
-        ILogger<MonitorGuardianes> logger)
+        ILogger<MonitorGuardianes> logger,
+        GuardianSurgeManager surges)
     {
         _administrador = administrador;
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _surges = surges;
     }
 
 
@@ -298,6 +302,14 @@ namespace ControlReactor.Api.ServicioSegundoPlano
                         var partidas = await repositorio
                             .ObtenerPartidasEnCursoAsync();
 
+                        // Retirar los guardianes temporales cuando termine su partida.
+                        var idsActivas = partidas.Select(p => p.IdPartida).ToHashSet();
+                        var finalizadas = _surges.RemoveFinishedMatches(
+                            idsActivas, _administrador);
+
+                        foreach (var oleada in finalizadas)
+                            await ComunicarOleadaAsync(oleada, false);
+
                         foreach (var partida in partidas)
                         {
                             if (stoppingToken.IsCancellationRequested)
@@ -324,6 +336,22 @@ namespace ControlReactor.Api.ServicioSegundoPlano
                                 partida.CodigoSala,
                                 partida.IdEscenario
                             );
+
+                            // El servidor activa y finaliza una única oleada por partida.
+                            var cambioOleada = _surges.Advance(
+                                partida, administradorSala, conexiones, DateTime.UtcNow);
+
+                            if (cambioOleada != null)
+                            {
+                                _logger.LogInformation(
+                                    "CA-22.2 | Sala {Sala} | Oleada {Estado} | Guardianes extra: {Cantidad}",
+                                    partida.CodigoSala,
+                                    cambioOleada.Started ? "INICIADA" : "FINALIZADA",
+                                    cambioOleada.State.GuardianIds.Count);
+
+                                await ComunicarOleadaAsync(
+                                    cambioOleada.State, cambioOleada.Started);
+                            }
 
                             // Actualizar el estado de cada guardián.
                             foreach (var guardian in administradorSala.ObtenerGuardianes())
@@ -360,6 +388,37 @@ namespace ControlReactor.Api.ServicioSegundoPlano
             {
                 _logger.LogInformation(
                     "Monitor de guardianes detenido.");
+            }
+        }
+
+        private async Task ComunicarOleadaAsync(
+            GuardianSurgeState state,
+            bool started)
+        {
+            var mensaje = new ServerMessage
+            {
+                Type = started ? "guardian_surge_started" : "guardian_surge_ended",
+                RoomCode = state.RoomCode,
+                GuardianSurgeDuration = started
+                    ? Math.Max(1, (int)Math.Ceiling(
+                        (state.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds))
+                    : null,
+                Message = started
+                    ? "¡Aparecieron 5 guardianes adicionales por 10 segundos!"
+                    : "La oleada terminó. Los guardianes extra desaparecieron."
+            };
+
+            foreach (var conexion in _groupManager.ObtenerConexionesSala(state.RoomCode))
+            {
+                try
+                {
+                    await conexion.SendAsync(mensaje);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex,
+                        "No se pudo comunicar la oleada en la sala {Sala}", state.RoomCode);
+                }
             }
         }
     }

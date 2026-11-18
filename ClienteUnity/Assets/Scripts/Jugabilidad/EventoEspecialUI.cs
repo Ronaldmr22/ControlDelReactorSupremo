@@ -15,6 +15,7 @@ public class EventoEspecialUI : MonoBehaviour
 
     [Header("Iconos")]
     [SerializeField] private Sprite iconoEnergiaAdicional;
+    [SerializeField] private Sprite iconoGuardianes;
 
     private Coroutine rutinaMensaje;
 
@@ -55,6 +56,19 @@ public class EventoEspecialUI : MonoBehaviour
             "¡ENERGÍA ADICIONAL!\n¡Recogé la cápsula y ganá 10 puntos!",
             iconoEnergiaAdicional
         );
+    }
+
+    public void MostrarOleadaGuardianes(int segundosRestantes)
+    {
+        MostrarEvento(
+            $"¡ALERTA: 5 GUARDIANES EXTRA!\n¡Quedan {segundosRestantes} segundos!",
+            iconoGuardianes
+        );
+    }
+
+    public void MostrarFinOleadaGuardianes()
+    {
+        MostrarEvento("¡OLEADA FINALIZADA!", iconoGuardianes);
     }
 
     private IEnumerator OcultarMensaje()

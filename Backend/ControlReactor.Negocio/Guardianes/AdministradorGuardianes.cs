@@ -30,17 +30,59 @@ namespace ControlReactor.Negocio.Guardianes
                     "Se necesitan exactamente 4 posiciones.");
             }
 
-            guardianes.Clear();
-
-            for (int i = 0; i < posiciones.Length; i++)
+            lock (_sync)
             {
-                Guardian guardian = new Guardian(
-                    i + 1,
-                    posiciones[i].X,
-                    posiciones[i].Y
-                );
+                guardianes.Clear();
 
-                guardianes.Add(guardian);
+                for (int i = 0; i < posiciones.Length; i++)
+                {
+                    Guardian guardian = new Guardian(
+                        i + 1,
+                        posiciones[i].X,
+                        posiciones[i].Y
+                    );
+
+                    guardianes.Add(guardian);
+                }
+            }
+        }
+
+        // Los guardianes nuevos usan exactamente la misma clase, IA y colisiones.
+        // Se devuelven sus IDs para eliminar únicamente los temporales al terminar.
+        public IReadOnlyList<int> AgregarGuardianesTemporales(
+            IReadOnlyList<(float X, float Y)> posiciones)
+        {
+            if (posiciones == null || posiciones.Count != 5)
+                throw new ArgumentException("Se requieren exactamente 5 posiciones.");
+
+            lock (_sync)
+            {
+                int siguienteId = guardianes.Count == 0
+                    ? 1
+                    : guardianes.Max(g => g.Id) + 1;
+
+                var ids = new List<int>(posiciones.Count);
+
+                foreach (var posicion in posiciones)
+                {
+                    int id = siguienteId++;
+                    guardianes.Add(new Guardian(id, posicion.X, posicion.Y));
+                    ids.Add(id);
+                }
+
+                return ids;
+            }
+        }
+
+        public void EliminarGuardianesTemporales(IReadOnlyCollection<int> ids)
+        {
+            if (ids == null || ids.Count == 0)
+                return;
+
+            lock (_sync)
+            {
+                var identificadores = new HashSet<int>(ids);
+                guardianes.RemoveAll(g => identificadores.Contains(g.Id));
             }
         }
 
