@@ -117,6 +117,11 @@ builder.Services.AddSingleton<EnergyBonusManager>(sp =>
     var environment = sp.GetRequiredService<IWebHostEnvironment>();
     return new EnergyBonusManager(Path.Combine(environment.ContentRootPath, "Mapas"));
 });
+builder.Services.AddSingleton<GuardianSurgeManager>(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    return new GuardianSurgeManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+});
 builder.Services.AddSingleton<WebSocketHandler>();
 
 // Servicios de administración de guardianes por sala

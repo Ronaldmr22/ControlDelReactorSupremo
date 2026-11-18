@@ -28,17 +28,20 @@ public sealed class WebSocketHandler
 
 private readonly ExtractionSessionManager _extractionManager;
 private readonly EnergyBonusManager _energyBonuses;
+private readonly GuardianSurgeManager _guardianSurges;
 
 public WebSocketHandler(
         ConnectionGroupManager groupManager,
         IServiceScopeFactory scopeFactory,
         ExtractionSessionManager extractionManager,
-        EnergyBonusManager energyBonuses)
+        EnergyBonusManager energyBonuses,
+        GuardianSurgeManager guardianSurges)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
         _extractionManager = extractionManager;
         _energyBonuses = energyBonuses;
+        _guardianSurges = guardianSurges;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -818,6 +821,25 @@ public WebSocketHandler(
                         Y = bonus.Y,
                         BonusDuration = remaining,
                         Message = "¡Hay una cápsula de energía adicional!"
+                    });
+                }
+            }
+
+            // Una conexión tardía debe ver el mismo evento que los demás.
+            var surge = _guardianSurges.GetActiveForRoom(roomCode);
+            if (surge != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (surge.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = "guardian_surge_started",
+                        RoomCode = roomCode,
+                        GuardianSurgeDuration = remaining,
+                        Message = "¡Hay 5 guardianes adicionales en la arena!"
                     });
                 }
             }

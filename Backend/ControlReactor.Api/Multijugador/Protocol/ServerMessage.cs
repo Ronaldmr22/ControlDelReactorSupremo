@@ -34,6 +34,9 @@ public class ServerMessage
     public string? BonusId { get; set; }
     public int? BonusDuration { get; set; }
 
+    // Segundos restantes de los cinco guardianes temporales (CA-22.2).
+    public int? GuardianSurgeDuration { get; set; }
+
     // Clasificación final de todos los participantes.
     public List<ResultadoJugador>? Resultados { get; set; }
     // Posiciones actuales de los guardianes.
