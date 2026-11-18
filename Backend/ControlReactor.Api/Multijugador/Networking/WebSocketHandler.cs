@@ -10,6 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using ControlReactor.Negocio.Servicios;
 using ControlReactor.Api.Multijugador.Configuration;
 using ControlReactor.Negocio.Guardianes;
+using ControlReactor.Api.Multijugador.Events;
+using System.Data;
+using Npgsql;
 
 
 namespace ControlReactor.Api.Multijugador.Networking;
@@ -24,15 +27,18 @@ public sealed class WebSocketHandler
         new(JsonSerializerDefaults.Web);
 
 private readonly ExtractionSessionManager _extractionManager;
+private readonly EnergyBonusManager _energyBonuses;
 
 public WebSocketHandler(
         ConnectionGroupManager groupManager,
         IServiceScopeFactory scopeFactory,
-        ExtractionSessionManager extractionManager)
+        ExtractionSessionManager extractionManager,
+        EnergyBonusManager energyBonuses)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
         _extractionManager = extractionManager;
+        _energyBonuses = energyBonuses;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -162,6 +168,9 @@ public WebSocketHandler(
 
             case "extract_stop":
                 await HandleExtractionStopAsync(connection, message);
+                break;
+            case "energy_bonus_collect":
+                await CollectEnergyBonusAsync(connection, message);
                 break;
             case "configure_guardians":
                 await ConfigureGuardiansAsync(connection, message);
@@ -440,6 +449,132 @@ public WebSocketHandler(
         });
     }
 
+    private async Task CollectEnergyBonusAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (!Guid.TryParseExact(message.BonusId, "N", out _))
+        {
+            await SendErrorAsync(connection, "Identificador de cápsula inválido.");
+            return;
+        }
+
+        if (connection.RoomCode is not string roomCode ||
+            connection.IdUsuario is not int userId ||
+            connection.IdJugadorPartida is not int playerMatchId ||
+            !_groupManager.ObtenerPosicionJugador(roomCode, connection.PlayerId,
+                out float x, out float y))
+        {
+            await SendErrorAsync(connection, "No se pudo validar la posición del jugador.");
+            return;
+        }
+
+        if (!_energyBonuses.TryReserve(roomCode, message.BonusId!, x, y,
+            out EnergyBonusState? bonus) || bonus == null)
+        {
+            await SendErrorAsync(connection, "La cápsula ya no está disponible o estás lejos.");
+            return;
+        }
+
+        bool awarded = false;
+
+        try
+        {
+            // Serializable evita perder puntos cuando coincide con extracción.
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider
+                    .GetRequiredService<ControlReactorDbContext>();
+
+                try
+                {
+                    await using var transaction = await db.Database
+                        .BeginTransactionAsync(IsolationLevel.Serializable);
+
+                    var match = await db.Partidas
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.IdPartida == bonus.MatchId);
+
+                    var player = await db.JugadoresPartida.FirstOrDefaultAsync(j =>
+                        j.IdJugadorPartida == playerMatchId &&
+                        j.IdUsuario == userId &&
+                        j.IdPartida == bonus.MatchId &&
+                        j.EnSala);
+
+                    if (match == null || match.Estado != "EN_CURSO" ||
+                        match.CodigoSala != roomCode || player == null)
+                    {
+                        await SendErrorAsync(connection,
+                            "La partida o el participante ya no están activos.");
+                        return;
+                    }
+
+                    player.Puntaje += EnergyBonusManager.BonusPoints;
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    awarded = true;
+                    _energyBonuses.Complete(bonus);
+
+                    var scoreUpdated = new ServerMessage
+                    {
+                        Type = "score_updated",
+                        RoomCode = roomCode,
+                        IdUsuario = player.IdUsuario,
+                        IdJugadorPartida = player.IdJugadorPartida,
+                        Puntaje = player.Puntaje
+                    };
+
+                    var collected = new ServerMessage
+                    {
+                        Type = "energy_bonus_collected",
+                        RoomCode = roomCode,
+                        BonusId = bonus.BonusId,
+                        IdUsuario = player.IdUsuario,
+                        Puntaje = player.Puntaje,
+                        Message = "Cápsula recogida: +10 puntos."
+                    };
+
+                    foreach (var recipient in _groupManager.ObtenerConexionesSala(roomCode))
+                    {
+                        try
+                        {
+                            await recipient.SendAsync(scoreUpdated);
+                            await recipient.SendAsync(collected);
+                        }
+                        catch (WebSocketException)
+                        {
+                            // Un cliente desconectado no impide actualizar a los demás.
+                        }
+                    }
+
+                    return;
+                }
+                catch (Exception ex) when (attempt < 2 &&
+                    (ex is PostgresException { SqlState: "40001" } ||
+                     ex.InnerException is PostgresException { SqlState: "40001" }))
+                {
+                    await Task.Delay(50 * (attempt + 1));
+                }
+            }
+
+            await SendErrorAsync(connection, "No se pudo registrar la cápsula. Intentá nuevamente.");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error al registrar la cápsula de energía: {ex.Message}");
+
+            if (!awarded)
+                await SendErrorAsync(connection, "No se pudo registrar la cápsula. Intentá nuevamente.");
+        }
+        finally
+        {
+            if (!awarded)
+                _energyBonuses.Release(bonus);
+        }
+    }
+
 
     private async Task HandleExtractionStartAsync(
         ClientConnection connection,
@@ -661,6 +796,31 @@ public WebSocketHandler(
                 IdUsuario = player.IdUsuario,
                 Puntaje = player.Puntaje
             });
+        }
+
+        // Reconstruir la pastilla para un jugador que se conectó tarde.
+        if (connection.RoomCode is string roomCode)
+        {
+            var bonus = _energyBonuses.GetActiveForRoom(roomCode);
+            if (bonus != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (bonus.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = "energy_bonus_spawned",
+                        RoomCode = roomCode,
+                        BonusId = bonus.BonusId,
+                        X = bonus.X,
+                        Y = bonus.Y,
+                        BonusDuration = remaining,
+                        Message = "¡Hay una cápsula de energía adicional!"
+                    });
+                }
+            }
         }
     }
 

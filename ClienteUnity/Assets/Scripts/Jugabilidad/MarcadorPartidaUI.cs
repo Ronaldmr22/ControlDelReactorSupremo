@@ -68,7 +68,10 @@ public class MarcadorPartidaUI : MonoBehaviour
         if (!puntajes.ContainsKey(mensaje.idUsuario))
             return;
 
-        puntajes[mensaje.idUsuario] = mensaje.puntaje;
+        // Extracción y cápsula pueden llegar en distinto orden por red.
+        // Durante una partida el puntaje solo aumenta; no retroceder por un mensaje viejo.
+        puntajes[mensaje.idUsuario] = Mathf.Max(
+            puntajes[mensaje.idUsuario], mensaje.puntaje);
         ActualizarMarcador();
     }
 

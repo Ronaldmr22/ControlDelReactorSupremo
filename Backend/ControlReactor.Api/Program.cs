@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Authorization;
 using ControlReactor.Api.Autenticacion;
 using ControlReactor.Negocio.Guardianes;
 using ControlReactor.Negocio.Guardianes.Colisiones;
+using ControlReactor.Api.Multijugador.Events;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -83,6 +84,7 @@ builder.Services.AddScoped<ServicioLogros>();
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
 builder.Services.AddHostedService<ExtractionProcessor>();
+builder.Services.AddHostedService<EnergyBonusWorker>();
 
 builder.Services.AddHostedService<MonitorPuertasArena>();
 
@@ -110,6 +112,11 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<ExtractionSessionManager>();
+builder.Services.AddSingleton<EnergyBonusManager>(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    return new EnergyBonusManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+});
 builder.Services.AddSingleton<WebSocketHandler>();
 
 // Servicios de administración de guardianes por sala
@@ -1514,6 +1521,7 @@ app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
 });
 
 app.Run();
+
 public class ConsultaGoogle
 {
     public string IdSolicitud { get; set; } = "";
