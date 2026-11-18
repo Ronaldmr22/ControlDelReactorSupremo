@@ -123481,6 +123481,7 @@ GameObject:
   - component: {fileID: 1710576230}
   - component: {fileID: 1710576235}
   - component: {fileID: 1710576234}
+  - component: {fileID: 1710576236}
   m_Layer: 5
   m_Name: CanvasMapa
   m_TagString: Untagged
@@ -123609,7 +123610,27 @@ MonoBehaviour:
   colorTextoSobrecarga: {r: 1, g: 0.25, b: 0.25, a: 1}
   iconoEnergiaAdicional: {fileID: 21300000, guid: a80eb9fa17c694040a6b18400e4229db, type: 3}
   iconoGuardianes: {fileID: 1036655721, guid: 733c5a4fc521dc2429325c8340aa5626, type: 3}
-  iconoSobrecargaReactor: {fileID: 0}
+  iconoSobrecargaReactor: {fileID: -2008730281, guid: 366cad230f85ab049b51720ddbd0549b, type: 3}
+  iconoArenasMovedizas: {fileID: 21300000, guid: e0a9a35fc52250248bea9c7131e5a189, type: 3}
+  iconoPuntosDobles: {fileID: 21300000, guid: f4ae9812525d40b48b0f3d0baa63eb5d, type: 3}
+--- !u!114 &1710576236
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1710576229}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e45d31ff33cc524ea299fc967939d09, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EventosCreativosCliente
+  cliente: {fileID: 464542369}
+  generador: {fileID: 22930738}
+  interfazEvento: {fileID: 1710576235}
+  reactor: {fileID: 2059915336}
+  prefabArenaMovediza: {fileID: 9072725577988530135, guid: 22620fc187d79b342bb594e4b1319176, type: 3}
+  escalaInstancia: 2
 --- !u!1 &1722330689
 GameObject:
   m_ObjectHideFlags: 0
@@ -124153,6 +124174,7 @@ MonoBehaviour:
   colorDisponible: {r: 1, g: 1, b: 1, a: 1}
   colorAgotado: {r: 0.8627452, g: 0.1921569, b: 0.1960784, a: 1}
   colorSobrecarga: {r: 1, g: 0.16, b: 0.16, a: 1}
+  colorPuntosDobles: {r: 0.1, g: 0.7, b: 1, a: 1}
 --- !u!61 &2059915337
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -124248,7 +124270,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 2
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -175806760, guid: 366cad230f85ab049b51720ddbd0549b, type: 3}
+  m_Sprite: {fileID: -2008730281, guid: 366cad230f85ab049b51720ddbd0549b, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0

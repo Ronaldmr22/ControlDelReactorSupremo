@@ -185,7 +185,6 @@ public class GeneradorJugadores : MonoBehaviour
             return;
         }
 
-        // Asigna las cuatro direcciones del avatar recibido del backend.
         movimiento.ConfigurarSprites(
             sprites.abajo,
             sprites.arriba,

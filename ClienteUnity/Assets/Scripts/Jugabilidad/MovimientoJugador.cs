@@ -6,6 +6,9 @@ using UnityEngine.InputSystem;
 public class MovimientoJugador : MonoBehaviour
 {
     [SerializeField] private float velocidad = 3f;
+    [Header("Eventos especiales")]
+    [SerializeField, Range(0.1f, 1f)] private float factorArenaMovediza = 0.6f;
+    private bool sobreArenaMovediza;
 
     [SerializeField] private Sprite abajo;
     [SerializeField] private Sprite arriba;
@@ -53,14 +56,12 @@ public class MovimientoJugador : MonoBehaviour
         }
         Gamepad control = Gamepad.current;
 
-        // Movimiento con la cruceta.
         movimiento = control != null
             ? control.dpad.ReadValue()
             : Vector2.zero;
 
         movimiento = Vector2.ClampMagnitude(movimiento, 1f);
 
-        // Acción con el botón X del control.
         bool presionada = control != null &&
                             control.buttonSouth.isPressed;
 
@@ -80,7 +81,6 @@ public class MovimientoJugador : MonoBehaviour
     }
     public void ActualizarDireccionVisual(Vector2 direccion)
     {
-        // Al detenerse conserva la última orientación.
         if (direccion.sqrMagnitude < 0.000001f)
             return;
 
@@ -105,7 +105,8 @@ public class MovimientoJugador : MonoBehaviour
             return;
         }
 
-        cuerpo.linearVelocity = movimiento * velocidad;
+        cuerpo.linearVelocity = movimiento * velocidad *
+            (sobreArenaMovediza ? factorArenaMovediza : 1f);
     }
 
     private void OnDisable()
@@ -131,6 +132,11 @@ public class MovimientoJugador : MonoBehaviour
             movimiento = Vector2.zero;
             cuerpo.linearVelocity = Vector2.zero;
         }
+    }
+
+    public void EstablecerArenaMovediza(bool activa)
+    {
+        sobreArenaMovediza = activa;
     }
 }
 

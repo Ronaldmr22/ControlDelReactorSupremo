@@ -86,6 +86,7 @@ builder.Services.AddHostedService<MonitorPartidas>();
 builder.Services.AddHostedService<ExtractionProcessor>();
 builder.Services.AddHostedService<EnergyBonusWorker>();
 builder.Services.AddHostedService<ReactorOverloadWorker>();
+builder.Services.AddHostedService<CreativeEventsWorker>();
 
 builder.Services.AddHostedService<MonitorPuertasArena>();
 
@@ -114,6 +115,11 @@ builder.Services.AddOpenApi();
 builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<ExtractionSessionManager>();
 builder.Services.AddSingleton<ReactorOverloadManager>();
+builder.Services.AddSingleton<CreativeEventsManager>(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    return new CreativeEventsManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+});
 builder.Services.AddSingleton<EnergyBonusManager>(sp =>
 {
     var environment = sp.GetRequiredService<IWebHostEnvironment>();

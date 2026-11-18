@@ -20,6 +20,7 @@ public sealed class ExtractionProcessor : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ExtractionProcessor> _logger;
     private readonly ReactorOverloadManager _overloads;
+    private readonly CreativeEventsManager _creativeEvents;
 
     private readonly Dictionary<string, DateTimeOffset> _lastAward = new();
 
@@ -28,13 +29,15 @@ public sealed class ExtractionProcessor : BackgroundService
         ConnectionGroupManager groups,
         IServiceScopeFactory scopeFactory,
         ILogger<ExtractionProcessor> logger,
-        ReactorOverloadManager overloads)
+        ReactorOverloadManager overloads,
+        CreativeEventsManager creativeEvents)
     {
         _sessions = sessions;
         _groups = groups;
         _scopeFactory = scopeFactory;
         _logger = logger;
         _overloads = overloads;
+        _creativeEvents = creativeEvents;
     }
 
     protected override async Task ExecuteAsync(
@@ -224,7 +227,10 @@ public sealed class ExtractionProcessor : BackgroundService
                     else
                     {
                         match.EnergiaRestante--;
-                        player.Puntaje++;
+                        // CA-22.4: doble puntaje solo por extracción del reactor.
+                        // CA-22.3 conserva prioridad: arriba ya bloqueamos por sobrecarga.
+                        player.Puntaje += _creativeEvents.IsDoublePoints(session.RoomCode)
+                            ? CreativeEventsManager.DoublePointsMultiplier : 1;
 
                         if (match.EnergiaRestante == 0)
                         {

@@ -16,13 +16,16 @@ public class ReactorCentral : MonoBehaviour
     [SerializeField] private Color colorDisponible = Color.white;
     [SerializeField] private Color colorAgotado = Color.gray;
     [SerializeField] private Color colorSobrecarga = new Color(1f, 0.16f, 0.16f, 1f);
+    [SerializeField] private Color colorPuntosDobles = new Color(0.1f, 0.7f, 1f, 1f);
 
     private SpriteRenderer imagen;
     private bool enSobrecarga;
+    private bool puntosDobles;
 
     public int EnergiaActual => energiaActual;
     public int EnergiaMaxima => energiaMaxima;
     public bool EnSobrecarga => enSobrecarga;
+    public bool PuntosDobles => puntosDobles;
     public bool Disponible => energiaActual > 0 && !enSobrecarga;
 
     private void Awake()
@@ -57,9 +60,15 @@ public class ReactorCentral : MonoBehaviour
         ActualizarVisual();
     }
 
+    public void EstablecerPuntosDobles(bool activa)
+    {
+        puntosDobles = activa;
+        ActualizarVisual();
+    }
+
     private void ActualizarVisual()
     {
-        // Actualizar barra de energia
+
         if (barraEnergia != null)
         {
             barraEnergia.minValue = 0;
@@ -69,16 +78,15 @@ public class ReactorCentral : MonoBehaviour
             barraEnergia.SetValueWithoutNotify(energiaActual);
         }
 
-        // Actualizar apariencia del reactor
         if (imagen != null)
         {
             imagen.color = enSobrecarga
                 ? colorSobrecarga
-                : energiaActual > 0 ? colorDisponible : colorAgotado;
+                : energiaActual <= 0 ? colorAgotado
+                : puntosDobles ? colorPuntosDobles : colorDisponible;
         }
     }
 
-    // Metodos temporales para probar el reactor
 
     [ContextMenu("Probar extraccion de 10")]
     private void ProbarExtraccion()

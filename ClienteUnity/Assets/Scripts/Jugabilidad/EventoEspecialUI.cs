@@ -18,6 +18,8 @@ public class EventoEspecialUI : MonoBehaviour
     [SerializeField] private Sprite iconoEnergiaAdicional;
     [SerializeField] private Sprite iconoGuardianes;
     [SerializeField] private Sprite iconoSobrecargaReactor;
+    [SerializeField] private Sprite iconoArenasMovedizas;
+    [SerializeField] private Sprite iconoPuntosDobles;
 
     private Coroutine rutinaMensaje;
     private Color colorTextoOriginal;
@@ -100,6 +102,29 @@ public class EventoEspecialUI : MonoBehaviour
     public void MostrarFinSobrecargaReactor()
     {
         MostrarEvento("¡REACTOR REACTIVADO!", iconoSobrecargaReactor);
+    }
+
+    public void MostrarArenasMovedizas(int segundos)
+    {
+        MostrarEvento($"¡ARENAS MOVEDIZAS!\n¡4 zonas lentas por {segundos} segundos!",
+            iconoArenasMovedizas);
+    }
+
+    public void MostrarFinArenasMovedizas()
+    {
+        MostrarEvento("¡DESAPARECIERON LAS ARENAS MOVEDIZAS!", iconoArenasMovedizas);
+    }
+
+    public void MostrarPuntosDobles(int segundos)
+    {
+        MostrarEvento($"¡REACTOR POTENCIADO ×2!\n¡Puntos dobles durante {segundos} segundos!",
+            iconoPuntosDobles != null ? iconoPuntosDobles : iconoSobrecargaReactor);
+    }
+
+    public void MostrarFinPuntosDobles()
+    {
+        MostrarEvento("¡TERMINARON LOS PUNTOS DOBLES!",
+            iconoPuntosDobles != null ? iconoPuntosDobles : iconoSobrecargaReactor);
     }
 
     private IEnumerator OcultarMensaje()
