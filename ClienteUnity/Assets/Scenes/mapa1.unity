@@ -9283,8 +9283,10 @@ MonoBehaviour:
   textoEvento: {fileID: 1179233982}
   iconoEvento: {fileID: 1969178810}
   duracionMensaje: 5
+  colorTextoSobrecarga: {r: 1, g: 0.25, b: 0.25, a: 1}
   iconoEnergiaAdicional: {fileID: 21300000, guid: a80eb9fa17c694040a6b18400e4229db, type: 3}
   iconoGuardianes: {fileID: -1648201243, guid: 733c5a4fc521dc2429325c8340aa5626, type: 3}
+  iconoSobrecargaReactor: {fileID: 0}
 --- !u!1 &1721824496
 GameObject:
   m_ObjectHideFlags: 0
@@ -9843,6 +9845,7 @@ MonoBehaviour:
   barraEnergia: {fileID: 2007899069}
   colorDisponible: {r: 1, g: 1, b: 1, a: 1}
   colorAgotado: {r: 0.8627452, g: 0.1921569, b: 0.1960784, a: 1}
+  colorSobrecarga: {r: 1, g: 0.16, b: 0.16, a: 1}
 --- !u!114 &1854355528
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9857,6 +9860,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ReactorNetworkSync
   clienteWebSocket: {fileID: 464542369}
   reactor: {fileID: 1854355527}
+  interfazEvento: {fileID: 1710576235}
 --- !u!1001 &1903836148
 PrefabInstance:
   m_ObjectHideFlags: 0

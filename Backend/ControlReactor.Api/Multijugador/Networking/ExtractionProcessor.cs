@@ -2,6 +2,7 @@
 using System.Data;
 using ControlReactor.Api.Multijugador.Configuration;
 using ControlReactor.Api.Multijugador.Protocol;
+using ControlReactor.Api.Multijugador.Events;
 using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,7 @@ public sealed class ExtractionProcessor : BackgroundService
     private readonly ConnectionGroupManager _groups;
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<ExtractionProcessor> _logger;
+    private readonly ReactorOverloadManager _overloads;
 
     private readonly Dictionary<string, DateTimeOffset> _lastAward = new();
 
@@ -25,12 +27,14 @@ public sealed class ExtractionProcessor : BackgroundService
         ExtractionSessionManager sessions,
         ConnectionGroupManager groups,
         IServiceScopeFactory scopeFactory,
-        ILogger<ExtractionProcessor> logger)
+        ILogger<ExtractionProcessor> logger,
+        ReactorOverloadManager overloads)
     {
         _sessions = sessions;
         _groups = groups;
         _scopeFactory = scopeFactory;
         _logger = logger;
+        _overloads = overloads;
     }
 
     protected override async Task ExecuteAsync(
@@ -140,6 +144,15 @@ public sealed class ExtractionProcessor : BackgroundService
         int remainingEnergy = 0;
         bool depleted = false;
 
+        using (await _overloads.EnterRoomGateAsync(
+            session.RoomCode, cancellationToken))
+        {
+            if (_overloads.IsOverloaded(session.RoomCode))
+            {
+                invalidReason = "El reactor está en sobrecarga.";
+            }
+            else
+            {
         await using (var transaction =
             await db.Database.BeginTransactionAsync(
                 IsolationLevel.Serializable,
@@ -230,6 +243,8 @@ public sealed class ExtractionProcessor : BackgroundService
                         remainingEnergy = match.EnergiaRestante;
                     }
                 }
+            }
+        }
             }
         }
 

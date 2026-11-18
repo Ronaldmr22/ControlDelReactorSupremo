@@ -29,19 +29,22 @@ public sealed class WebSocketHandler
 private readonly ExtractionSessionManager _extractionManager;
 private readonly EnergyBonusManager _energyBonuses;
 private readonly GuardianSurgeManager _guardianSurges;
+private readonly ReactorOverloadManager _overloads;
 
 public WebSocketHandler(
         ConnectionGroupManager groupManager,
         IServiceScopeFactory scopeFactory,
         ExtractionSessionManager extractionManager,
         EnergyBonusManager energyBonuses,
-        GuardianSurgeManager guardianSurges)
+        GuardianSurgeManager guardianSurges,
+        ReactorOverloadManager overloads)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
         _extractionManager = extractionManager;
         _energyBonuses = energyBonuses;
         _guardianSurges = guardianSurges;
+        _overloads = overloads;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -691,10 +694,25 @@ public WebSocketHandler(
         }
 
 
-        var result = _extractionManager.TryStart(
-            connection,
-            message.ExtractionId!
-        );
+        // Impide iniciar una extracción durante una sobrecarga. Este candado
+        // también lo usa el worker que activa el evento.
+        ExtractionStartResult result;
+        bool overloaded;
+
+        using (await _overloads.EnterRoomGateAsync(roomCode, CancellationToken.None))
+        {
+            overloaded = _overloads.IsOverloaded(roomCode);
+            result = overloaded
+                ? ExtractionStartResult.Duplicate
+                : _extractionManager.TryStart(connection, message.ExtractionId!);
+        }
+
+        if (overloaded)
+        {
+            await SendErrorAsync(connection,
+                "El reactor está en sobrecarga. Esperá a que termine el evento.");
+            return;
+        }
 
         if (result == ExtractionStartResult.Duplicate)
         {
@@ -840,6 +858,25 @@ public WebSocketHandler(
                         RoomCode = roomCode,
                         GuardianSurgeDuration = remaining,
                         Message = "¡Hay 5 guardianes adicionales en la arena!"
+                    });
+                }
+            }
+
+            // Resynchronizar el reactor si el jugador se une durante el evento.
+            var overload = _overloads.GetActiveForRoom(roomCode);
+            if (overload != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (overload.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = "reactor_overload_started",
+                        RoomCode = roomCode,
+                        OverloadDuration = remaining,
+                        Message = "El reactor está en sobrecarga. No entrega puntos."
                     });
                 }
             }

@@ -12,15 +12,25 @@ public class EventoEspecialUI : MonoBehaviour
 
     [Header("Configuracion")]
     [SerializeField] private float duracionMensaje = 3f;
+    [SerializeField] private Color colorTextoSobrecarga = new Color(1f, 0.25f, 0.25f, 1f);
 
     [Header("Iconos")]
     [SerializeField] private Sprite iconoEnergiaAdicional;
     [SerializeField] private Sprite iconoGuardianes;
+    [SerializeField] private Sprite iconoSobrecargaReactor;
 
     private Coroutine rutinaMensaje;
+    private Color colorTextoOriginal;
+    private FontStyles estiloTextoOriginal;
 
     private void Awake()
     {
+        if (textoEvento != null)
+        {
+            colorTextoOriginal = textoEvento.color;
+            estiloTextoOriginal = textoEvento.fontStyle;
+        }
+
         if (panelEvento != null)
             panelEvento.SetActive(false);
     }
@@ -40,6 +50,8 @@ public class EventoEspecialUI : MonoBehaviour
             StopCoroutine(rutinaMensaje);
 
         textoEvento.text = mensaje;
+        textoEvento.color = colorTextoOriginal;
+        textoEvento.fontStyle = estiloTextoOriginal;
 
         iconoEvento.sprite = icono;
         iconoEvento.enabled = icono != null;
@@ -69,6 +81,25 @@ public class EventoEspecialUI : MonoBehaviour
     public void MostrarFinOleadaGuardianes()
     {
         MostrarEvento("¡OLEADA FINALIZADA!", iconoGuardianes);
+    }
+
+    public void MostrarSobrecargaReactor(int segundosRestantes)
+    {
+        MostrarEvento(
+            $"¡SOBRECARGA DEL REACTOR!\n¡No da puntos durante {segundosRestantes} segundos!",
+            iconoSobrecargaReactor
+        );
+
+        if (textoEvento != null)
+        {
+            textoEvento.color = colorTextoSobrecarga;
+            textoEvento.fontStyle |= FontStyles.Bold;
+        }
+    }
+
+    public void MostrarFinSobrecargaReactor()
+    {
+        MostrarEvento("¡REACTOR REACTIVADO!", iconoSobrecargaReactor);
     }
 
     private IEnumerator OcultarMensaje()

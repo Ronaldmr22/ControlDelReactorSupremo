@@ -37,6 +37,9 @@ public class ServerMessage
     // Segundos restantes de los cinco guardianes temporales (CA-22.2).
     public int? GuardianSurgeDuration { get; set; }
 
+    // Tiempo restante de sobrecarga del reactor (CA-22.3).
+    public int? OverloadDuration { get; set; }
+
     // Clasificación final de todos los participantes.
     public List<ResultadoJugador>? Resultados { get; set; }
     // Posiciones actuales de los guardianes.
