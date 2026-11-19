@@ -128,7 +128,7 @@ public class CargarRankingGlobalMovil : MonoBehaviour
                 );
 
                 texto.AppendLine(
-                    "<color=#B9C9E4>──────────────────────────</color>"
+                    "<color=#B9C9E4>────────────────────────</color>"
                 );
 
                 texto.AppendLine();
