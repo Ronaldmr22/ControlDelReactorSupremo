@@ -19,8 +19,21 @@ using ControlReactor.Api.Multijugador.Events;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Permitir que el cliente Unity WebGL se conecte desde el navegador.
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("UnityWebGL", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:8000"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
- // Autenticación con Google y usuarios tradicionales
+
+// Autenticación con Google y usuarios tradicionales
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultScheme = "GoogleCookie";
@@ -201,6 +214,9 @@ catch (Exception ex)
 
 
 app.UseWebSockets();
+
+app.UseCors("UnityWebGL");
+
 app.UseAuthentication();
 app.UseAuthorization();
 

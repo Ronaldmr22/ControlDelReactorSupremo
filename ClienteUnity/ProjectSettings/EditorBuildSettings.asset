@@ -8,23 +8,32 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/Scenes/SampleScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Pantallas_Iniciales.unity
     guid: 9024948f2a7a33c42b5582237a5dd1f3
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Lobby.unity
     guid: 4cf14ce3ebfe1cf43bb2a11328873608
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/mapa1.unity
     guid: 7beb4d742075f944abb39b66255997cb
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/Victoria.unity
     guid: b05370b718caf6e4f8dcabf01d1b22f1
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/mapa2.unity
     guid: fe01cbb4a27aaa24a9b83b4287121c92
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/mapa3.unity
     guid: d574e4a2d709a234ea4e05bad19d3f60
+  - enabled: 0
+    path: Assets/Scenes/Movil/Pantalla_Inicial_Movil.unity
+    guid: e91d311bba1a20940baa325d39fc11e0
+  - enabled: 1
+    path: Assets/Scenes/Movil/Pantallas_Iniciales_Movil.unity
+    guid: 156bc17028ad2ce478b758b107e0ca73
+  - enabled: 1
+    path: Assets/Scenes/Movil/Lobby_Movil.unity
+    guid: 114da1206c45556449fe10edbee04218
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
