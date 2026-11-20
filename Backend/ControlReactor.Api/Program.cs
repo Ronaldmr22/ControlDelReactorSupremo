@@ -129,9 +129,21 @@ builder.Services.AddSingleton<ConnectionGroupManager>();
 builder.Services.AddSingleton<ExtractionSessionManager>();
 builder.Services.AddSingleton<ReactorOverloadManager>();
 builder.Services.AddSingleton<CreativeEventsManager>(sp =>
+
+{    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    return new CreativeEventsManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+});
+builder.Services.AddHostedService<TrapsWorker>();
+builder.Services.AddSingleton<TrapManager>(sp =>
 {
     var environment = sp.GetRequiredService<IWebHostEnvironment>();
-    return new CreativeEventsManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+
+    string rutaMapas = Path.Combine(
+        environment.ContentRootPath,
+        "Mapas"
+    );
+
+    return new TrapManager(rutaMapas);
 });
 builder.Services.AddSingleton<EnergyBonusManager>(sp =>
 {
