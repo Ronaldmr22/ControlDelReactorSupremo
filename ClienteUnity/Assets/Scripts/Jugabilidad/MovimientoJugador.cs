@@ -9,6 +9,8 @@ public class MovimientoJugador : MonoBehaviour
     [Header("Eventos especiales")]
     [SerializeField, Range(0.1f, 1f)] private float factorArenaMovediza = 0.6f;
     private bool sobreArenaMovediza;
+    [Header("Trampas")]
+    private bool controlesInvertidos;
 
     [SerializeField] private Sprite abajo;
     [SerializeField] private Sprite arriba;
@@ -18,6 +20,8 @@ public class MovimientoJugador : MonoBehaviour
     private SpriteRenderer imagen;
     private Vector2 movimiento;
     private bool estaCongelado;
+    [Header("Efectos visuales")]
+    [SerializeField] private GameObject efectoEstrellas;
     private MensajeSobreAvatar mensaje;
 
     public event Action AccionEjecutada;
@@ -59,6 +63,14 @@ public class MovimientoJugador : MonoBehaviour
         movimiento = control != null
             ? control.dpad.ReadValue()
             : Vector2.zero;
+
+        // Trampa de controles invertidos.
+        if (controlesInvertidos)
+        {
+            movimiento = -movimiento;
+        }
+
+        movimiento = Vector2.ClampMagnitude(movimiento, 1f);
 
         movimiento = Vector2.ClampMagnitude(movimiento, 1f);
 
@@ -127,6 +139,11 @@ public class MovimientoJugador : MonoBehaviour
     {
         estaCongelado = congelado;
 
+        if (efectoEstrellas != null)
+        {
+            efectoEstrellas.SetActive(congelado);
+        }
+
         if (congelado)
         {
             movimiento = Vector2.zero;
@@ -137,6 +154,10 @@ public class MovimientoJugador : MonoBehaviour
     public void EstablecerArenaMovediza(bool activa)
     {
         sobreArenaMovediza = activa;
+    }
+    public void EstablecerControlesInvertidos(bool invertidos)
+    {
+        controlesInvertidos = invertidos;
     }
 }
 

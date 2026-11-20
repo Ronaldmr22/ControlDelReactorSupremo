@@ -60,7 +60,9 @@ public class MarcadorPartidaUI : MonoBehaviour
     {
         var mensaje = JsonUtility.FromJson<MensajePuntaje>(json);
 
-        if (mensaje == null || (mensaje.type != "score_updated" && mensaje.type != "extraction_updated"))
+        if (mensaje == null ||
+            (mensaje.type != "score_updated" &&
+            mensaje.type != "extraction_updated"))
         {
             return;
         }
@@ -68,8 +70,9 @@ public class MarcadorPartidaUI : MonoBehaviour
         if (!puntajes.ContainsKey(mensaje.idUsuario))
             return;
 
-        puntajes[mensaje.idUsuario] = Mathf.Max(
-            puntajes[mensaje.idUsuario], mensaje.puntaje);
+        // Actualizar con el puntaje real enviado por el servidor
+        puntajes[mensaje.idUsuario] = mensaje.puntaje;
+
         ActualizarMarcador();
     }
 

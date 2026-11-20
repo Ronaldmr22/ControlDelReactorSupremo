@@ -44,6 +44,7 @@ public class ServerMessage
     // CA-22.4: dos eventos creativos y cuatro zonas sincronizadas.
     public int? CreativeDuration { get; set; }
     public List<SandZonePosition>? SandZones { get; set; }
+    public List<TrapPosition>? Traps { get; set; }
 
     // Clasificación final de todos los participantes.
     public List<ResultadoJugador>? Resultados { get; set; }

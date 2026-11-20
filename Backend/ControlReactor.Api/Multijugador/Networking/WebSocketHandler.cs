@@ -31,6 +31,7 @@ private readonly EnergyBonusManager _energyBonuses;
 private readonly GuardianSurgeManager _guardianSurges;
 private readonly ReactorOverloadManager _overloads;
 private readonly CreativeEventsManager _creativeEvents;
+private readonly TrapManager _traps;
 
 public WebSocketHandler(
         ConnectionGroupManager groupManager,
@@ -39,7 +40,8 @@ public WebSocketHandler(
         EnergyBonusManager energyBonuses,
         GuardianSurgeManager guardianSurges,
         ReactorOverloadManager overloads,
-        CreativeEventsManager creativeEvents)
+        CreativeEventsManager creativeEvents,
+        TrapManager traps)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
@@ -48,6 +50,7 @@ public WebSocketHandler(
         _guardianSurges = guardianSurges;
         _overloads = overloads;
         _creativeEvents = creativeEvents;
+        _traps = traps;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -904,6 +907,19 @@ public WebSocketHandler(
                         Message = "Evento creativo CA-22.4 activo."
                     });
                 }
+            }
+
+            var trampas = _traps.GetForRoom(roomCode);
+
+            if (trampas != null)
+            {
+                await connection.SendAsync(new ServerMessage
+                {
+                    Type = "traps_spawned",
+                    RoomCode = roomCode,
+                    Traps = trampas.Traps.ToList(),
+                    Message = "Trampas sincronizadas."
+                });
             }
         }
     }
