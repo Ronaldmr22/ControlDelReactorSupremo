@@ -440,6 +440,23 @@ app.MapGet("/api/usuarios/google-resultado",
 
         if (!login.Exito)
         {
+            if (login.Mensaje == "Este correo ya está registrado. Inicia sesión con tu cuenta existente.")
+            {
+                var ruta = Path.Combine(
+                    app.Environment.ContentRootPath,
+                    "Paginas",
+                    "google-error.html"
+                );
+
+                var html = await File.ReadAllTextAsync(ruta);
+
+                return Results.Content(
+                    html,
+                    "text/html; charset=utf-8",
+                    statusCode: 400
+                );
+            }
+
             return Results.BadRequest(new
             {
                 mensaje = login.Mensaje
