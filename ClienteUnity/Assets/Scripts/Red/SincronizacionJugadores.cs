@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class SincronizacionJugadores : MonoBehaviour
 {
@@ -25,6 +26,8 @@ public class SincronizacionJugadores : MonoBehaviour
     private Vector3 ultimaPosicionEnviada;
     private MovimientoJugador movimientoLocal;
     private Coroutine rutinaCongelamiento;
+    private readonly Dictionary<string, Coroutine>
+    rutinasEstrellasRemotas = new();
 
     private void OnEnable()
     {
@@ -78,26 +81,58 @@ public class SincronizacionJugadores : MonoBehaviour
     private void ProcesarMensaje(string json)
     {
         MensajeRed mensaje = JsonUtility.FromJson<MensajeRed>(json);
-    
+
         if (mensaje.type == "player_frozen")
         {
-            if (mensaje.playerId != miIdWebSocket)
+            if (generador == null ||
+                string.IsNullOrEmpty(mensaje.playerId))
                 return;
 
-            if (generador == null || generador.JugadorLocal == null)
-                return;
+            // Si el jugador afectado es el local.
+            if (mensaje.playerId == miIdWebSocket)
+            {
+                if (generador.JugadorLocal == null)
+                    return;
 
-            MovimientoJugador movimientoJugador =
-                generador.JugadorLocal.GetComponent<MovimientoJugador>();
+                MovimientoJugador movimientoJugador =
+                    generador.JugadorLocal.GetComponent<MovimientoJugador>();
 
-            if (movimientoJugador == null)
-                return;
+                if (movimientoJugador == null)
+                    return;
 
-            if (rutinaCongelamiento != null)
-                StopCoroutine(rutinaCongelamiento);
+                if (rutinaCongelamiento != null)
+                    StopCoroutine(rutinaCongelamiento);
 
-            rutinaCongelamiento =
-                StartCoroutine(CongelarTemporalmente(movimientoJugador));
+                rutinaCongelamiento =
+                    StartCoroutine(CongelarTemporalmente(movimientoJugador));
+            }
+            // Si el jugador afectado es remoto.
+            else
+            {
+                Transform remoto =
+                    generador.ObtenerJugadorRemoto(mensaje.playerId);
+
+                if (remoto == null)
+                    return;
+
+                MovimientoJugador movimientoRemoto =
+                    remoto.GetComponent<MovimientoJugador>();
+
+                if (movimientoRemoto == null)
+                    return;
+
+                if (rutinasEstrellasRemotas.TryGetValue(
+                    mensaje.playerId, out Coroutine rutinaAnterior))
+                {
+                    StopCoroutine(rutinaAnterior);
+                }
+
+                rutinasEstrellasRemotas[mensaje.playerId] =
+                    StartCoroutine(MostrarEstrellasRemotas(
+                        mensaje.playerId,
+                        movimientoRemoto
+                    ));
+            }
 
             return;
         }
@@ -203,6 +238,19 @@ public class SincronizacionJugadores : MonoBehaviour
         rutinaCongelamiento = null;
 
         Debug.Log("Jugador descongelado.");
+    }
+    private IEnumerator MostrarEstrellasRemotas(
+    string playerId,
+    MovimientoJugador jugador)
+    {
+        jugador.EstablecerEfectoEstrellas(true);
+
+        yield return new WaitForSecondsRealtime(2f);
+
+        if (jugador != null)
+            jugador.EstablecerEfectoEstrellas(false);
+
+        rutinasEstrellasRemotas.Remove(playerId);
     }
 
 

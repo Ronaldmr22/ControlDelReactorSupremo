@@ -159,10 +159,7 @@ public class MovimientoJugador : MonoBehaviour
     {
         estaCongelado = congelado;
 
-        if (efectoEstrellas != null)
-        {
-            efectoEstrellas.SetActive(congelado);
-        }
+        EstablecerEfectoEstrellas(congelado);
 
         if (congelado)
         {
@@ -191,6 +188,13 @@ public class MovimientoJugador : MonoBehaviour
         {
             movimiento = Vector2.zero;
             cuerpo.linearVelocity = Vector2.zero;
+        }
+    }
+    public void EstablecerEfectoEstrellas(bool activo)
+    {
+        if (efectoEstrellas != null)
+        {
+            efectoEstrellas.SetActive(activo);
         }
     }
 }
