@@ -508,6 +508,54 @@ CircleCollider2D:
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_Radius: 1.5
+--- !u!1 &248640072
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 248640074}
+  - component: {fileID: 248640073}
+  m_Layer: 0
+  m_Name: AdministradorTrampas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &248640073
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 248640072}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea538520141570d4a88d50dc0a469745, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TrampasCliente
+  cliente: {fileID: 464542369}
+  prefabControlesInvertidos: {fileID: 3693755476318079615, guid: b4b5c6fa04d709749b4e3fe6264bbbea, type: 3}
+  prefabCeldaElectrica: {fileID: 2365026436233893915, guid: 7d411b28970b2254da2e27362f3bf879, type: 3}
+  prefabTrampaCongelada: {fileID: 4999275179632624873, guid: 2ec40d07fc610b54e9bf48c29b744abc, type: 3}
+--- !u!4 &248640074
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 248640072}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.48089, y: -2.24875, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &282747106
 GameObject:
   m_ObjectHideFlags: 0
@@ -128630,6 +128678,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1434738406}
+  - {fileID: 248640074}
   - {fileID: 1784352907}
   - {fileID: 1122395768}
   - {fileID: 1583892257}

@@ -10,6 +10,7 @@ public class TrampasCliente : MonoBehaviour
     [Header("Prefabs")]
     [SerializeField] private GameObject prefabControlesInvertidos;
     [SerializeField] private GameObject prefabCeldaElectrica;
+    [SerializeField] private GameObject prefabTrampaCongelada;
 
     private readonly List<GameObject> trampasInstanciadas = new();
 
@@ -76,32 +77,26 @@ public class TrampasCliente : MonoBehaviour
 
         foreach (var posicion in posiciones)
         {
-            GameObject prefab = posicion.kind switch
-            {
-                0 => prefabCeldaElectrica,
-                1 => prefabControlesInvertidos,
-                _ => null
-            };
+        GameObject prefab = posicion.kind switch
+        {
+            0 => prefabCeldaElectrica,
+            1 => prefabControlesInvertidos,
+            2 => prefabTrampaCongelada,
+            _ => null
+        };
 
-            if (prefab == null)
-            {
-                Debug.LogWarning(
-                    $"Prefab no configurado para trampa {posicion.kind}");
-                continue;
-            }
-
-            GameObject instancia = Instantiate(
-                prefab,
-                new Vector3(posicion.x, posicion.y, 0f),
-                Quaternion.identity,
-                transform
-            );
+                    GameObject instancia = Instantiate(
+                        prefab,
+                        new Vector3(posicion.x, posicion.y, 0f),
+                        Quaternion.identity,
+                        transform
+                    );
 
             trampasInstanciadas.Add(instancia);
         }
 
         Debug.Log(
-            $"Se generaron {trampasInstanciadas.Count} trampas.");
+            $"Se generaron {trampasInstanciadas.Count} de {posiciones.Length} trampas recibidas.");
     }
 
     private void LimpiarTrampas()

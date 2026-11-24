@@ -9,8 +9,15 @@ public class MovimientoJugador : MonoBehaviour
     [Header("Eventos especiales")]
     [SerializeField, Range(0.1f, 1f)] private float factorArenaMovediza = 0.6f;
     private bool sobreArenaMovediza;
+
     [Header("Trampas")]
     private bool controlesInvertidos;
+
+    [SerializeField, Range(0.1f, 1f)]
+    private float factorTrampaCongelada = 0.6f;
+
+    private bool sobreTrampaCongelada;
+    private bool atrapadoCeldaElectrica;
 
     [SerializeField] private Sprite abajo;
     [SerializeField] private Sprite arriba;
@@ -53,7 +60,7 @@ public class MovimientoJugador : MonoBehaviour
 
     private void Update()
     {
-        if (estaCongelado)
+        if (estaCongelado || atrapadoCeldaElectrica)
         {
             movimiento = Vector2.zero;
             return;
@@ -111,16 +118,29 @@ public class MovimientoJugador : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        if (estaCongelado)
+        if (estaCongelado || atrapadoCeldaElectrica)
         {
             cuerpo.linearVelocity = Vector2.zero;
             return;
         }
 
-        cuerpo.linearVelocity = movimiento * velocidad *
-            (sobreArenaMovediza ? factorArenaMovediza : 1f);
-    }
+        float factorVelocidad = 1f;
 
+        if (sobreArenaMovediza)
+        {
+            factorVelocidad = factorArenaMovediza;
+        }
+
+        if (sobreTrampaCongelada)
+        {
+            factorVelocidad = Mathf.Min(
+                factorVelocidad,
+                factorTrampaCongelada);
+        }
+
+        cuerpo.linearVelocity =
+            movimiento * velocidad * factorVelocidad;
+    }
     private void OnDisable()
     {
 
@@ -158,6 +178,20 @@ public class MovimientoJugador : MonoBehaviour
     public void EstablecerControlesInvertidos(bool invertidos)
     {
         controlesInvertidos = invertidos;
+    }
+        public void EstablecerTrampaCongelada(bool activa)
+    {
+        sobreTrampaCongelada = activa;
+    }
+    public void EstablecerCeldaElectrica(bool activa)
+    {
+        atrapadoCeldaElectrica = activa;
+
+        if (activa)
+        {
+            movimiento = Vector2.zero;
+            cuerpo.linearVelocity = Vector2.zero;
+        }
     }
 }
 

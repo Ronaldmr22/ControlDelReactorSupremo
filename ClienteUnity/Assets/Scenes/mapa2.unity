@@ -1388,6 +1388,54 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0abf20566e5798f478e6329a0fcc3433, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ObstaculoArena
+--- !u!1 &623858439
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 623858441}
+  - component: {fileID: 623858440}
+  m_Layer: 0
+  m_Name: AdministradorTrampas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &623858440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 623858439}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ea538520141570d4a88d50dc0a469745, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TrampasCliente
+  cliente: {fileID: 0}
+  prefabControlesInvertidos: {fileID: 3693755476318079615, guid: b4b5c6fa04d709749b4e3fe6264bbbea, type: 3}
+  prefabCeldaElectrica: {fileID: 2365026436233893915, guid: 7d411b28970b2254da2e27362f3bf879, type: 3}
+  prefabTrampaCongelada: {fileID: 4999275179632624873, guid: 2ec40d07fc610b54e9bf48c29b744abc, type: 3}
+--- !u!4 &623858441
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 623858439}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -15.48089, y: -2.24875, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &632030599
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -124447,6 +124495,7 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1434738406}
+  - {fileID: 623858441}
   - {fileID: 434918490}
   - {fileID: 800989448}
   - {fileID: 1982209489}

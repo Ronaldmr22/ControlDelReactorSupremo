@@ -1,4 +1,3 @@
-
 using ControlReactor.Api.Multijugador.Configuration;
 using ControlReactor.Api.Multijugador.Networking;
 using ControlReactor.Api.ServicioSegundoPlano;
@@ -9,8 +8,9 @@ namespace ControlReactor.Api.Multijugador.Events;
 
 public enum TrapKind
 {
-    ElectricCage,
-    InvertedControls
+    ElectricCage = 0,
+    InvertedControls = 1,
+    FrozenTrap = 2
 }
 
 public sealed record TrapPosition(
@@ -27,7 +27,7 @@ public sealed record TrapMatchState(
 
 public sealed class TrapManager
 {
-    private const float HalfWidth = 1f;
+    private const float HalfWidth = 0.5f;
 
     private readonly object _sync = new();
 
@@ -73,7 +73,7 @@ public sealed class TrapManager
                     TrapKind.InvertedControls, x, y));
             }
 
-            if (positions.Count < 2)
+            if (positions.Count < 3)
                 throw new InvalidDataException(
                     $"Mapa {sceneId}: no hay espacio para las trampas.");
 
@@ -157,18 +157,23 @@ public sealed class TrapManager
                         candidate.X, candidate.Y) < 4.84f))
                     continue;
 
-                var kind = chosen.Count == 0
-                    ? TrapKind.InvertedControls
-                    : TrapKind.ElectricCage;
+                TrapKind kind = chosen.Count switch
+                {
+                    0 => TrapKind.InvertedControls,
+                    1 => TrapKind.ElectricCage,
+                    2 => TrapKind.FrozenTrap,
+                    _ => throw new InvalidOperationException(
+                        "Cantidad de trampas no válida.")
+                };
 
                 chosen.Add(new TrapPosition(
                     kind, candidate.X, candidate.Y));
 
-                if (chosen.Count == 2)
+                if (chosen.Count == 3)
                     break;
             }
 
-            if (chosen.Count != 2)
+            if (chosen.Count != 3)
                 return null;
 
             var state = new TrapMatchState(
