@@ -147,13 +147,41 @@ namespace ControlReactor.Api.ServicioSegundoPlano
             if (congelado)
             {
                 // Avisar inmediatamente al jugador que fue congelado.
-                await jugador.SendAsync(new ServerMessage
+                // Preparar la notificación de congelamiento.
+                var mensajeCongelamiento = new ServerMessage
                 {
                     Type = "player_frozen",
+                    RoomCode = codigoSala,
                     PlayerId = jugador.PlayerId,
                     GuardianId = guardian.Id,
                     Message = "El guardián te ha congelado."
-                });
+                };
+
+                // Notificar primero al jugador afectado.
+                await jugador.SendAsync(mensajeCongelamiento);
+
+                // Notificar también a los demás jugadores de la sala.
+                var conexionesCongelamiento =
+                    _groupManager.ObtenerConexionesSala(codigoSala);
+
+                foreach (var conexion in conexionesCongelamiento)
+                {
+                    if (conexion.PlayerId == jugador.PlayerId)
+                        continue;
+
+                    try
+                    {
+                        await conexion.SendAsync(mensajeCongelamiento);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(
+                            ex,
+                            "No se pudo comunicar el congelamiento al jugador {PlayerId}",
+                            conexion.PlayerId
+                        );
+                    }
+                }
 
                 // Restar 10 puntos por el ataque.
                 if (jugador.IdJugadorPartida.HasValue)
@@ -166,7 +194,7 @@ namespace ControlReactor.Api.ServicioSegundoPlano
                     int? puntajeActualizado =
                         await servicioPuntuacion.ModificarPuntaje(
                             jugador.IdJugadorPartida.Value,
-                            -10
+                            -2
                         );
                     // Notificar a todos los jugadores el nuevo puntaje.
                     if (puntajeActualizado.HasValue && jugador.IdUsuario.HasValue)
