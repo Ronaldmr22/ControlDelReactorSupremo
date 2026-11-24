@@ -752,6 +752,7 @@ MonoBehaviour:
   cliente: {fileID: 464542369}
   prefabControlesInvertidos: {fileID: 3693755476318079615, guid: b4b5c6fa04d709749b4e3fe6264bbbea, type: 3}
   prefabCeldaElectrica: {fileID: 2365026436233893915, guid: 7d411b28970b2254da2e27362f3bf879, type: 3}
+  prefabTrampaCongelada: {fileID: 4999275179632624873, guid: 2ec40d07fc610b54e9bf48c29b744abc, type: 3}
 --- !u!1 &226779581
 GameObject:
   m_ObjectHideFlags: 0
