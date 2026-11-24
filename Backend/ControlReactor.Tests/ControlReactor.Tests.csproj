@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -16,6 +16,11 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
   </ItemGroup>
 
+  <!-- WebSocketHandler, IServiceScopeFactory y ServiceCollection para pruebas de integración. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
   <ItemGroup>
     <Using Include="Xunit" />
   </ItemGroup>
@@ -24,6 +29,8 @@
     <ProjectReference Include="..\ControlReactor.Datos\ControlReactor.Datos.csproj" />
     <ProjectReference Include="..\ControlReactor.Negocio\ControlReactor.Negocio.csproj" />
     <ProjectReference Include="..\ControlReactor.Modelos\ControlReactor.Modelos.csproj" />
+    <!-- Sprint 3: la extracción, los eventos, las trampas y el código de Google viven en la API. -->
+    <ProjectReference Include="..\ControlReactor.Api\ControlReactor.Api.csproj" />
   </ItemGroup>
 
 </Project>

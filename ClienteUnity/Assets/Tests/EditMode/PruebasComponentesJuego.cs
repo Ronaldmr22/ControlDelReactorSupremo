@@ -143,6 +143,7 @@ public class PruebasComponentesJuego
     }
 
     [Test]
+    [Ignore("US-14 retirada en Sprint 3: el botón físico ahora solo extrae energía del reactor.")]
     public void US14_Positiva_AccionRemota_MuestraTextoSobreAvatar()
     {
         var sincronizador = Crear("SincronizacionJugadores");
@@ -161,6 +162,7 @@ public class PruebasComponentesJuego
     }
 
     [Test]
+    [Ignore("US-14 retirada en Sprint 3: el botón físico ahora solo extrae energía del reactor.")]
     public void US14_Negativa_AccionPropia_NoSeReplicaComoAccionRemota()
     {
         var sincronizador = Crear("SincronizacionJugadores");
@@ -203,40 +205,131 @@ public class PruebasComponentesJuego
         StringAssert.Contains("0 pts", b.text);
     }
 
+    // US-17 / US-26. VictoriaUI se rediseñó como podio: las pruebas anteriores usaban
+    // campos que ya no existen (txtNombreGanador, txtPuntos, imagenGanador).
     [Test]
     public void US17_Positiva_ResultadoValido_MuestraGanadorYPuntos()
     {
-        var vista = Crear("VictoriaUI");
-        var titulo = CrearUI<TextMeshProUGUI>("Titulo"); var nombre = CrearUI<TextMeshProUGUI>("Nombre");
-        var puntos = CrearUI<TextMeshProUGUI>("Puntos"); var imagen = CrearUI<Image>("Ganador");
-        Asignar(vista,"txtTitulo",titulo); Asignar(vista,"txtNombreGanador",nombre);
-        Asignar(vista,"txtPuntos",puntos); Asignar(vista,"imagenGanador",imagen);
-        Asignar(vista,"personajes",new Sprite[] { SpritePrueba() });
-        var dto = Activator.CreateInstance(Tipo("DatosResultadoPartida"));
-        var ganador = Activator.CreateInstance(Tipo("GanadorPartida"));
-        Campo(ganador.GetType(),"nombreUsuario").SetValue(ganador,"Ana");
-        Campo(ganador.GetType(),"puntaje").SetValue(ganador,125);
-        Campo(ganador.GetType(),"avatarSeleccionado").SetValue(ganador,1);
-        Campo(dto.GetType(),"ganador").SetValue(dto,ganador);
-        Llamar(vista,"MostrarResultado",dto);
-        Assert.AreEqual("Ana",nombre.text);
-        StringAssert.Contains("125",puntos.text);
-        Assert.IsTrue(imagen.enabled);
+        var v = CrearVistaPodio();
+        Llamar(v.Vista, "MostrarResultado", Resultado(95, ("Ana", 1, 125, 1)));
+
+        Assert.IsTrue(v.Puestos[0].activeSelf);
+        Assert.AreEqual("Ana", v.Nombres[0].text);
+        StringAssert.Contains("125", v.Puntos[0].text);
+        Assert.IsTrue(v.Avatares[0].enabled);
+        Assert.AreEqual("Duración: 01:35", v.Duracion.text);
     }
 
     [Test]
-    public void US17_Negativa_ResultadoNoDisponible_MuestraErrorSinAvatar()
+    public void US17_Negativa_ResultadoNoDisponible_MuestraErrorSinPodio()
     {
-        var vista = Crear("VictoriaUI");
-        var titulo = CrearUI<TextMeshProUGUI>("Titulo"); var nombre = CrearUI<TextMeshProUGUI>("Nombre");
-        var puntos = CrearUI<TextMeshProUGUI>("Puntos"); var imagen = CrearUI<Image>("Ganador");
-        Asignar(vista,"txtTitulo",titulo); Asignar(vista,"txtNombreGanador",nombre);
-        Asignar(vista,"txtPuntos",puntos); Asignar(vista,"imagenGanador",imagen);
-        LogAssert.Expect(LogType.Warning,"Sin conexión");
-        Llamar(vista,"MostrarError","Sin conexión");
-        Assert.AreEqual("Resultado no disponible",titulo.text);
-        Assert.AreEqual("Sin conexión",nombre.text);
-        Assert.IsFalse(imagen.enabled);
+        var v = CrearVistaPodio();
+        LogAssert.Expect(LogType.Warning, "Sin conexión");
+        Llamar(v.Vista, "MostrarError", "Sin conexión");
+
+        Assert.AreEqual("Resultado no disponible", v.Titulo.text);
+        Assert.AreEqual("Duración: --:--", v.Duracion.text);
+        Assert.IsFalse(v.Puestos[0].activeSelf);
+        Assert.IsFalse(v.Puestos[1].activeSelf);
+        Assert.IsFalse(v.Puestos[2].activeSelf);
+    }
+
+    // CA-26.2, CA-26.3, CA-26.5: tres participantes -> podio completo y resumen.
+    [Test]
+    public void US26_Positiva_TresJugadores_MuestraPodioCompleto()
+    {
+        var v = CrearVistaPodio();
+        Llamar(v.Vista, "MostrarResultado",
+            Resultado(300, ("Ana", 1, 90, 1), ("Beto", 2, 60, 2), ("Caro", 3, 30, 3)));
+
+        for (int i = 0; i < 3; i++) Assert.IsTrue(v.Puestos[i].activeSelf);
+        Assert.AreEqual("Beto", v.Nombres[1].text);
+        Assert.AreEqual("Caro", v.Nombres[2].text);
+        Assert.AreEqual("Participantes: 3", v.Participantes.text);
+        Assert.AreEqual("Duración: 05:00", v.Duracion.text);
+    }
+
+    // CA-26.4: con dos jugadores solo se muestran las posiciones que existen.
+    [Test]
+    public void US26_Negativa_DosJugadores_NoMuestraTercerLugar()
+    {
+        var v = CrearVistaPodio();
+        Llamar(v.Vista, "MostrarResultado", Resultado(120, ("Ana", 1, 50, 1), ("Beto", 2, 40, 2)));
+
+        Assert.IsTrue(v.Puestos[0].activeSelf);
+        Assert.IsTrue(v.Puestos[1].activeSelf);
+        Assert.IsFalse(v.Puestos[2].activeSelf);
+        Assert.AreEqual("Participantes: 2", v.Participantes.text);
+    }
+
+    // Avatar fuera de rango: no rompe la pantalla y oculta la imagen.
+    [Test]
+    public void US26_Negativa_AvatarInvalido_OcultaImagenSinFallar()
+    {
+        var v = CrearVistaPodio();
+        LogAssert.Expect(LogType.Warning, "Avatar inválido para Ana: 9");
+        Llamar(v.Vista, "MostrarResultado", Resultado(60, ("Ana", 1, 10, 9)));
+
+        Assert.IsTrue(v.Puestos[0].activeSelf);
+        Assert.IsFalse(v.Avatares[0].enabled);
+    }
+
+    private sealed class VistaPodio
+    {
+        public Component Vista;
+        public TextMeshProUGUI Titulo, Duracion, Participantes;
+        public GameObject[] Puestos = new GameObject[3];
+        public Image[] Avatares = new Image[3];
+        public TextMeshProUGUI[] Nombres = new TextMeshProUGUI[3];
+        public TextMeshProUGUI[] Puntos = new TextMeshProUGUI[3];
+    }
+
+    private VistaPodio CrearVistaPodio()
+    {
+        var v = new VistaPodio { Vista = Crear("VictoriaUI") };
+        v.Titulo = CrearUI<TextMeshProUGUI>("Titulo");
+        v.Duracion = CrearUI<TextMeshProUGUI>("Duracion");
+        v.Participantes = CrearUI<TextMeshProUGUI>("Participantes");
+        Asignar(v.Vista, "txtTitulo", v.Titulo);
+        Asignar(v.Vista, "txtDuracionPartida", v.Duracion);
+        Asignar(v.Vista, "txtParticipantes", v.Participantes);
+        Asignar(v.Vista, "personajes", new Sprite[] { SpritePrueba(), SpritePrueba(), SpritePrueba() });
+
+        string[] lugares = { "Primer", "Segundo", "Tercer" };
+        string[] puestos = { "primerLugar", "segundoLugar", "tercerLugar" };
+        for (int i = 0; i < 3; i++)
+        {
+            v.Puestos[i] = new GameObject(puestos[i]);
+            v.Puestos[i].transform.SetParent(raiz.transform, false);
+            v.Avatares[i] = CrearUI<Image>("Avatar" + lugares[i]);
+            v.Nombres[i] = CrearUI<TextMeshProUGUI>("Nombre" + lugares[i]);
+            v.Puntos[i] = CrearUI<TextMeshProUGUI>("Puntos" + lugares[i]);
+            Asignar(v.Vista, puestos[i], v.Puestos[i]);
+            Asignar(v.Vista, "avatar" + lugares[i] + "Lugar", v.Avatares[i]);
+            Asignar(v.Vista, "nombre" + lugares[i] + "Lugar", v.Nombres[i]);
+            Asignar(v.Vista, "puntos" + lugares[i] + "Lugar", v.Puntos[i]);
+        }
+        return v;
+    }
+
+    private static object Resultado(int duracion, params (string Nombre, int Posicion, int Puntaje, int Avatar)[] jugadores)
+    {
+        var dto = Activator.CreateInstance(Tipo("DatosResultadoPartida"));
+        Campo(dto.GetType(), "duracionSegundos").SetValue(dto, duracion);
+        var tipoJugador = Tipo("JugadorClasificacion");
+        var lista = Array.CreateInstance(tipoJugador, jugadores.Length);
+        for (int i = 0; i < jugadores.Length; i++)
+        {
+            var j = Activator.CreateInstance(tipoJugador);
+            Campo(tipoJugador, "nombreUsuario").SetValue(j, jugadores[i].Nombre);
+            Campo(tipoJugador, "posicion").SetValue(j, jugadores[i].Posicion);
+            Campo(tipoJugador, "puntaje").SetValue(j, jugadores[i].Puntaje);
+            Campo(tipoJugador, "avatarSeleccionado").SetValue(j, jugadores[i].Avatar);
+            Campo(tipoJugador, "esGanador").SetValue(j, jugadores[i].Posicion == 1);
+            lista.SetValue(j, i);
+        }
+        Campo(dto.GetType(), "clasificacion").SetValue(dto, lista);
+        return dto;
     }
 
     private Component Crear(string tipo, params Type[] componentes)
