@@ -230,7 +230,10 @@ public sealed class ExtractionProcessor : BackgroundService
                         // CA-22.4: doble puntaje solo por extracción del reactor.
                         // CA-22.3 conserva prioridad: arriba ya bloqueamos por sobrecarga.
                         player.Puntaje += _creativeEvents.IsDoublePoints(session.RoomCode)
-                            ? CreativeEventsManager.DoublePointsMultiplier : 1;
+                            ? 3 * CreativeEventsManager.DoublePointsMultiplier : 3;
+
+                        if (match.TipoFinalizacion == "PUNTOS" && match.PuntajeObjetivo.HasValue)
+                            player.Puntaje = Math.Min(player.Puntaje, match.PuntajeObjetivo.Value);
 
                         if (match.EnergiaRestante == 0)
                         {
