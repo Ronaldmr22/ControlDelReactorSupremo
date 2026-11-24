@@ -1,0 +1,431 @@
+fileFormatVersion: 2
+guid: a80eb9fa17c694040a6b18400e4229db
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -8142837330323285981
+    second: "P\xEDldora energ\xE9tica_0"
+  - first:
+      213: -4692770569587174367
+    second: "P\xEDldora energ\xE9tica_1"
+  - first:
+      213: 9058143466437250908
+    second: "P\xEDldora energ\xE9tica_2"
+  - first:
+      213: -9147980412694004576
+    second: "P\xEDldora energ\xE9tica_3"
+  - first:
+      213: 503237457303042359
+    second: "P\xEDldora energ\xE9tica_4"
+  - first:
+      213: 6883868227850179835
+    second: "P\xEDldora energ\xE9tica_5"
+  - first:
+      213: -8110887765062940632
+    second: "P\xEDldora energ\xE9tica_6"
+  - first:
+      213: -1046084251462647571
+    second: "P\xEDldora energ\xE9tica_7"
+  - first:
+      213: 6020049323173816535
+    second: "P\xEDldora energ\xE9tica_8"
+  - first:
+      213: 1039958619837058164
+    second: "P\xEDldora energ\xE9tica_9"
+  - first:
+      213: -4908877095838785518
+    second: "P\xEDldora energ\xE9tica_10"
+  - first:
+      213: -3593082783042269037
+    second: "P\xEDldora energ\xE9tica_11"
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 600
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_0"
+      rect:
+        serializedVersion: 2
+        x: 48
+        y: 27
+        width: 1397
+        height: 825
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3285a463794defe80800000000000000
+      internalID: -8142837330323285981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_1"
+      rect:
+        serializedVersion: 2
+        x: 734
+        y: 766
+        width: 101
+        height: 174
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1245953c70eefdeb0800000000000000
+      internalID: -4692770569587174367
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_2"
+      rect:
+        serializedVersion: 2
+        x: 792
+        y: 757
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5f84899d7df4bd70800000000000000
+      internalID: 9058143466437250908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_3"
+      rect:
+        serializedVersion: 2
+        x: 870
+        y: 753
+        width: 13
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0ac74216848db0180800000000000000
+      internalID: -9147980412694004576
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_4"
+      rect:
+        serializedVersion: 2
+        x: 904
+        y: 751
+        width: 10
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 739f7381dcbdbf600800000000000000
+      internalID: 503237457303042359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_5"
+      rect:
+        serializedVersion: 2
+        x: 474
+        y: 636
+        width: 37
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf49b915ea9688f50800000000000000
+      internalID: 6883868227850179835
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_6"
+      rect:
+        serializedVersion: 2
+        x: 318
+        y: 507
+        width: 9
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8288c5e0d86507f80800000000000000
+      internalID: -8110887765062940632
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_7"
+      rect:
+        serializedVersion: 2
+        x: 1010
+        y: 323
+        width: 37
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: de0407a6aef8b71f0800000000000000
+      internalID: -1046084251462647571
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_8"
+      rect:
+        serializedVersion: 2
+        x: 590
+        y: 241
+        width: 15
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7d82b1eb6f28b8350800000000000000
+      internalID: 6020049323173816535
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_9"
+      rect:
+        serializedVersion: 2
+        x: 648
+        y: 239
+        width: 17
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 47c4e74dadcae6e00800000000000000
+      internalID: 1039958619837058164
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_10"
+      rect:
+        serializedVersion: 2
+        x: 664
+        y: 238
+        width: 33
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2106a782a4a20ebb0800000000000000
+      internalID: -4908877095838785518
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: "P\xEDldora energ\xE9tica_11"
+      rect:
+        serializedVersion: 2
+        x: 1088
+        y: 245
+        width: 14
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 390913cee3ec22ec0800000000000000
+      internalID: -3593082783042269037
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      "P\xEDldora energ\xE9tica_0": -8142837330323285981
+      "P\xEDldora energ\xE9tica_1": -4692770569587174367
+      "P\xEDldora energ\xE9tica_10": -4908877095838785518
+      "P\xEDldora energ\xE9tica_11": -3593082783042269037
+      "P\xEDldora energ\xE9tica_2": 9058143466437250908
+      "P\xEDldora energ\xE9tica_3": -9147980412694004576
+      "P\xEDldora energ\xE9tica_4": 503237457303042359
+      "P\xEDldora energ\xE9tica_5": 6883868227850179835
+      "P\xEDldora energ\xE9tica_6": -8110887765062940632
+      "P\xEDldora energ\xE9tica_7": -1046084251462647571
+      "P\xEDldora energ\xE9tica_8": 6020049323173816535
+      "P\xEDldora energ\xE9tica_9": 1039958619837058164
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

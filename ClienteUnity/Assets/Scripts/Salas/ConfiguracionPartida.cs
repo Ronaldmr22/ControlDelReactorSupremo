@@ -8,6 +8,7 @@ public class ConfiguracionPartidaUI : MonoBehaviour
     [SerializeField] private TMP_Dropdown duracion;
     [SerializeField] private TMP_Dropdown puntajeObjetivo;
     [SerializeField] private TMP_Dropdown tiempoParalisis;
+    [SerializeField] private TMP_Dropdown escenario;
     [SerializeField] private TMP_Text textoError;
 
     private void OnEnable()
@@ -57,7 +58,15 @@ public class ConfiguracionPartidaUI : MonoBehaviour
     {
         return LeerNumero(tiempoParalisis);
     }
+    
+    public int ObtenerIdEscenario()
+    {
+        if (escenario == null || escenario.options.Count == 0)
+            return 0;
 
+        return escenario.value + 1;
+    }
+    
     // Lee el número inicial de opciones como "100 puntos".
     private int LeerNumero(TMP_Dropdown dropdown)
     {

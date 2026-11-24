@@ -157,6 +157,10 @@ namespace ControlReactor.Datos.Migrations
                     b.Property<string>("CodigoSala")
                         .HasColumnType("text");
 
+                    b.Property<int>("EnergiaRestante")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(100);
+
                     b.Property<string>("Estado")
                         .IsRequired()
                         .HasColumnType("text");
@@ -167,6 +171,10 @@ namespace ControlReactor.Datos.Migrations
                     b.Property<DateTime>("FechaInicio")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("IdEscenario")
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<int?>("IdUsuarioCreador")
                         .HasColumnType("integer");
 
@@ -175,6 +183,9 @@ namespace ControlReactor.Datos.Migrations
 
                     b.Property<int?>("PuntajeObjetivo")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ReactorRechargeReadyAtUtc")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("SegundosCongelamiento")
                         .HasColumnType("integer");
@@ -229,6 +240,36 @@ namespace ControlReactor.Datos.Migrations
                         .IsUnique();
 
                     b.ToTable("Usuarios");
+                });
+
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.UsuarioLoginGoogle", b =>
+                {
+                    b.Property<int>("IdUsuarioLoginGoogle")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("IdUsuarioLoginGoogle"));
+
+                    b.Property<string>("IdGoogle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("IdUsuario")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Proveedor")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("IdUsuarioLoginGoogle");
+
+                    b.HasIndex("IdGoogle")
+                        .IsUnique();
+
+                    b.HasIndex("IdUsuario")
+                        .IsUnique();
+
+                    b.ToTable("UsuariosLoginGoogle");
                 });
 
             modelBuilder.Entity("ControlReactor.Modelos.Entidades.UsuarioLogro", b =>
@@ -294,6 +335,17 @@ namespace ControlReactor.Datos.Migrations
                         .IsRequired();
 
                     b.Navigation("Partida");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("ControlReactor.Modelos.Entidades.UsuarioLoginGoogle", b =>
+                {
+                    b.HasOne("ControlReactor.Modelos.Entidades.Usuario", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("IdUsuario")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Usuario");
                 });

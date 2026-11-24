@@ -119,14 +119,14 @@ public class SalaUI : MonoBehaviour
             }
         }
 
-        textoEstadoSala.text = cantidad < 2
+        textoEstadoSala.text = cantidad < 1
             ? $"Esperando jugador... ({cantidad}/3)"
             : $"Participantes en la sala: {cantidad}/3";
 
         botonConfiguracion.SetActive(true);
 
         botonIniciar.interactable = soyCreador &&
-        cantidad >= 2 &&
+        cantidad >= 1 &&
         sala.estado == "ESPERANDO" &&
         !ocupado &&
         !entrandoPartida;
@@ -271,7 +271,7 @@ public class SalaUI : MonoBehaviour
             sala.idUsuarioCreador == SesionUsuario.IdUsuario;
 
         if (!soyCreador || sala.participantes == null ||
-            sala.participantes.Length < 2)
+            sala.participantes.Length < 1)
             return;
 
         CambiarOcupado(true);
@@ -299,6 +299,20 @@ public class SalaUI : MonoBehaviour
         if (entrandoPartida)
             return;
 
+        string nombreEscena = sala.idEscenario switch
+        {
+            0 => "mapa1", // Compatibilidad con el backend anterior.
+            1 => "mapa1",
+            2 => "mapa2",
+            3 => "mapa3",
+            _ => null
+        };
+
+        if (nombreEscena == null)
+        {
+            textoEstadoSala.text = "Este escenario no está disponible en tu versión del juego.";
+            return;
+        }
         entrandoPartida = true;
 
         if (actualizacionSala != null)
@@ -316,7 +330,7 @@ public class SalaUI : MonoBehaviour
         Debug.Log("Mi usuario: " + SesionUsuario.IdUsuario);
         Debug.Log("==================================");
 
-        SceneManager.LoadScene("Mapa1");
+        SceneManager.LoadScene(nombreEscena);
     }
 
 
@@ -333,6 +347,14 @@ public class SalaUI : MonoBehaviour
 
         configuracionPartida.LimpiarError();
 
+        int idEscenario = configuracionPartida.ObtenerIdEscenario();
+
+        if (idEscenario == 0)
+        {
+            configuracionPartida.MostrarError("No se pudo leer el escenario.");
+            return;
+        }
+
         string modo = configuracionPartida.ObtenerTipoFinalizacion();
         int minutos = configuracionPartida.ObtenerDuracion();
         int puntos = configuracionPartida.ObtenerPuntaje();
@@ -343,11 +365,13 @@ public class SalaUI : MonoBehaviour
         CambiarOcupado(true);
         botonGuardarConfiguracion.interactable = false;
 
+
         StartCoroutine(cliente.GuardarConfiguracion(
             modo,
             minutos,
             puntos,
             segundos,
+            idEscenario,
             () =>
             {
                 StartCoroutine(cliente.ConsultarSala(

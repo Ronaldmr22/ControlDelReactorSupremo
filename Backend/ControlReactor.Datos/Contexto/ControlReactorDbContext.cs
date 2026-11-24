@@ -16,6 +16,7 @@ namespace ControlReactor.Datos.Contexto
         public DbSet<UsuarioLogro> UsuariosLogros { get; set; }
         public DbSet<CodigoVerificacion> CodigosVerificacion { get; set; }
         public DbSet<CodigoRecuperacion> CodigosRecuperacion { get; set; }
+        public DbSet<UsuarioLoginGoogle> UsuariosLoginGoogle { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -29,9 +30,18 @@ namespace ControlReactor.Datos.Contexto
 
             // PARTIDA
             modelBuilder.Entity<Partida>().HasKey(p => p.IdPartida);
+
             modelBuilder.Entity<Partida>()
-            .HasIndex(p => p.CodigoSala)
-            .IsUnique();
+                .HasIndex(p => p.CodigoSala)
+                .IsUnique();
+
+            modelBuilder.Entity<Partida>()
+                .Property(p => p.EnergiaRestante)
+                .HasDefaultValue(100);
+
+            modelBuilder.Entity<Partida>()
+                .Property(p => p.IdEscenario)
+                .HasDefaultValue(1);
 
             // JUGADOR - PARTIDA
             modelBuilder.Entity<JugadorPartida>().HasKey(jp => jp.IdJugadorPartida);
@@ -58,6 +68,17 @@ namespace ControlReactor.Datos.Contexto
             // CÓDIGO DE RECUPERACIÓN DE CONTRASEÑA
             modelBuilder.Entity<CodigoRecuperacion>().HasKey(c => c.IdCodigoRecuperacion);
             modelBuilder.Entity<CodigoRecuperacion>().HasOne(c => c.Usuario).WithMany().HasForeignKey(c => c.IdUsuario);
+
+            // INICIO DE SESIÓN CON GOOGLE
+            modelBuilder.Entity<UsuarioLoginGoogle>().HasKey(g => g.IdUsuarioLoginGoogle);
+            modelBuilder.Entity<UsuarioLoginGoogle>().HasOne(g => g.Usuario).WithMany().HasForeignKey(g => g.IdUsuario).OnDelete(DeleteBehavior.Cascade);
+
+            // Una cuenta de Google solo puede estar vinculada a un usuario.
+            modelBuilder.Entity<UsuarioLoginGoogle>().HasIndex(g => g.IdGoogle).IsUnique();
+
+            // Un usuario solo puede vincular una cuenta de Google.
+            modelBuilder.Entity<UsuarioLoginGoogle>().HasIndex(g => g.IdUsuario).IsUnique();
+            modelBuilder.Entity<UsuarioLoginGoogle>().Property(g => g.IdGoogle).IsRequired();
         }
     }
 }

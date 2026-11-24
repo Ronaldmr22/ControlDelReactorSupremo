@@ -1,11 +1,14 @@
-
 using System;
 using UnityEngine;
+using System.Collections;
+using System.Collections.Generic;
 
 public class SincronizacionJugadores : MonoBehaviour
 {
     [SerializeField] private ClienteWebSocket cliente;
     [SerializeField] private GeneradorJugadores generador;
+    [SerializeField]
+    private ControladorGuardianes controladorGuardianes;
 
     [Serializable]
     private class MensajeRed
@@ -21,8 +24,10 @@ public class SincronizacionJugadores : MonoBehaviour
     private string miIdWebSocket;
     private float siguienteEnvio;
     private Vector3 ultimaPosicionEnviada;
-    private bool primeraPosicion = true;
     private MovimientoJugador movimientoLocal;
+    private Coroutine rutinaCongelamiento;
+    private readonly Dictionary<string, Coroutine>
+    rutinasEstrellasRemotas = new();
 
     private void OnEnable()
     {
@@ -44,7 +49,6 @@ public class SincronizacionJugadores : MonoBehaviour
 
     private void Update()
     {
-        VincularAccionLocal();
         if (cliente == null ||
             !cliente.EstaConectado ||
             generador == null ||
@@ -52,19 +56,19 @@ public class SincronizacionJugadores : MonoBehaviour
             string.IsNullOrEmpty(miIdWebSocket))
             return;
 
-        // Enviar posición 10 veces por segundo.
+        VincularAccionLocal();
+
+        // Enviar posición 20 veces por segundo.
         if (Time.time < siguienteEnvio)
             return;
 
-        siguienteEnvio = Time.time + 0.1f;
+        siguienteEnvio = Time.time + 0.05f;
 
         Vector3 posicion = generador.JugadorLocal.position;
-        if (!primeraPosicion &&
-            Vector3.Distance(posicion, ultimaPosicionEnviada) < 0.01f)
-            return;
+
+        Debug.Log($"POSICION ENVIADA UNITY: " +$"X={posicion.x:F2}, Y={posicion.y:F2}");
 
         ultimaPosicionEnviada = posicion;
-        primeraPosicion = false;
 
         cliente.EnviarMensaje(JsonUtility.ToJson(new MensajeRed
         {
@@ -77,6 +81,61 @@ public class SincronizacionJugadores : MonoBehaviour
     private void ProcesarMensaje(string json)
     {
         MensajeRed mensaje = JsonUtility.FromJson<MensajeRed>(json);
+
+        if (mensaje.type == "player_frozen")
+        {
+            if (generador == null ||
+                string.IsNullOrEmpty(mensaje.playerId))
+                return;
+
+            // Si el jugador afectado es el local.
+            if (mensaje.playerId == miIdWebSocket)
+            {
+                if (generador.JugadorLocal == null)
+                    return;
+
+                MovimientoJugador movimientoJugador =
+                    generador.JugadorLocal.GetComponent<MovimientoJugador>();
+
+                if (movimientoJugador == null)
+                    return;
+
+                if (rutinaCongelamiento != null)
+                    StopCoroutine(rutinaCongelamiento);
+
+                rutinaCongelamiento =
+                    StartCoroutine(CongelarTemporalmente(movimientoJugador));
+            }
+            // Si el jugador afectado es remoto.
+            else
+            {
+                Transform remoto =
+                    generador.ObtenerJugadorRemoto(mensaje.playerId);
+
+                if (remoto == null)
+                    return;
+
+                MovimientoJugador movimientoRemoto =
+                    remoto.GetComponent<MovimientoJugador>();
+
+                if (movimientoRemoto == null)
+                    return;
+
+                if (rutinasEstrellasRemotas.TryGetValue(
+                    mensaje.playerId, out Coroutine rutinaAnterior))
+                {
+                    StopCoroutine(rutinaAnterior);
+                }
+
+                rutinasEstrellasRemotas[mensaje.playerId] =
+                    StartCoroutine(MostrarEstrellasRemotas(
+                        mensaje.playerId,
+                        movimientoRemoto
+                    ));
+            }
+
+            return;
+        }
 
         if (mensaje.type == "room_subscribed")
         {
@@ -125,26 +184,6 @@ public class SincronizacionJugadores : MonoBehaviour
 
             remoto.position = nuevaPosicion;
         }
-        else if (mensaje.type == "player_action")
-        {
-            if (mensaje.playerId == miIdWebSocket)
-                return;
-
-            if (generador == null)
-                return;
-
-            Transform remoto =
-                generador.ObtenerJugadorRemoto(mensaje.playerId);
-
-            if (remoto == null)
-                return;
-
-            MensajeSobreAvatar mensajeAvatar =
-                remoto.GetComponent<MensajeSobreAvatar>();
-
-            if (mensajeAvatar != null)
-                mensajeAvatar.Mostrar("Acción");
-        }
         else if (mensaje.type == "player_left")
         {
             if (generador != null)
@@ -184,5 +223,35 @@ public class SincronizacionJugadores : MonoBehaviour
         if (movimientoLocal != null)
             movimientoLocal.AccionEjecutada += EnviarAccion;
     }
+    private System.Collections.IEnumerator CongelarTemporalmente(
+    MovimientoJugador jugador)
+    {
+        jugador.EstablecerCongelado(true);
+
+        Debug.Log("Jugador congelado durante 2 segundos.");
+
+        yield return new WaitForSecondsRealtime(2f);
+
+        if (jugador != null)
+            jugador.EstablecerCongelado(false);
+
+        rutinaCongelamiento = null;
+
+        Debug.Log("Jugador descongelado.");
+    }
+    private IEnumerator MostrarEstrellasRemotas(
+    string playerId,
+    MovimientoJugador jugador)
+    {
+        jugador.EstablecerEfectoEstrellas(true);
+
+        yield return new WaitForSecondsRealtime(2f);
+
+        if (jugador != null)
+            jugador.EstablecerEfectoEstrellas(false);
+
+        rutinasEstrellasRemotas.Remove(playerId);
+    }
+
 
 }

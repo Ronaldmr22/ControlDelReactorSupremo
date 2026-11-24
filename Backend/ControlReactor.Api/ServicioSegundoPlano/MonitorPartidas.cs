@@ -79,14 +79,34 @@ namespace ControlReactor.Api.ServicioSegundoPlano
 
                                     var ganador = jugadores.FirstOrDefault(j => j.EsGanador);
 
+                                    // Crear la clasificación final de todos los jugadores.
+                                    var resultados = jugadores
+                                        .OrderByDescending(j => j.Puntaje)
+                                        .Select((jugador, indice) => new ResultadoJugador
+                                        {
+                                            Posicion = indice + 1,
+                                            IdJugadorPartida = jugador.IdJugadorPartida,
+                                            IdUsuario = jugador.IdUsuario,
+                                            Puntaje = jugador.Puntaje,
+                                            EsGanador = jugador.EsGanador
+                                        })
+                                        .ToList();
+
+
                                     var mensaje = new ServerMessage
                                     {
                                         Type = "game_finished",
                                         RoomCode = partida.CodigoSala,
+
+                                        // Mantener los datos del ganador para compatibilidad con Unity.
                                         IdJugadorPartida = ganador?.IdJugadorPartida,
                                         IdUsuario = ganador?.IdUsuario,
-                                        Puntaje = ganador?.Puntaje
+                                        Puntaje = ganador?.Puntaje,
+
+                                        // Enviar la clasificación completa.
+                                        Resultados = resultados
                                     };
+
 
                                     foreach (var conexion in conexiones)
                                     {

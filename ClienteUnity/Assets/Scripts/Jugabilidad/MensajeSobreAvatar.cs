@@ -13,7 +13,6 @@ public class MensajeSobreAvatar : MonoBehaviour
         texto.text = "";
     }
 
-    // La llama quien quiera mostrar un mensaje sobre este avatar.
     public void Mostrar(string mensaje)
     {
         texto.text = mensaje;

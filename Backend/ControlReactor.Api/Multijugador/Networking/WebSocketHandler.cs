@@ -1,4 +1,5 @@
-﻿using ControlReactor.Api.Multijugador.Networking;
+﻿using System.Diagnostics;
+using ControlReactor.Api.Multijugador.Networking;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -7,7 +8,11 @@ using ControlReactor.Api.Multijugador.Protocol;
 using ControlReactor.Datos.Contexto;
 using Microsoft.EntityFrameworkCore;
 using ControlReactor.Negocio.Servicios;
-
+using ControlReactor.Api.Multijugador.Configuration;
+using ControlReactor.Negocio.Guardianes;
+using ControlReactor.Api.Multijugador.Events;
+using System.Data;
+using Npgsql;
 
 
 namespace ControlReactor.Api.Multijugador.Networking;
@@ -21,10 +26,31 @@ public sealed class WebSocketHandler
     private static readonly JsonSerializerOptions JsonOptions =
         new(JsonSerializerDefaults.Web);
 
-    public WebSocketHandler(ConnectionGroupManager groupManager, IServiceScopeFactory scopeFactory)
+private readonly ExtractionSessionManager _extractionManager;
+private readonly EnergyBonusManager _energyBonuses;
+private readonly GuardianSurgeManager _guardianSurges;
+private readonly ReactorOverloadManager _overloads;
+private readonly CreativeEventsManager _creativeEvents;
+private readonly TrapManager _traps;
+
+public WebSocketHandler(
+        ConnectionGroupManager groupManager,
+        IServiceScopeFactory scopeFactory,
+        ExtractionSessionManager extractionManager,
+        EnergyBonusManager energyBonuses,
+        GuardianSurgeManager guardianSurges,
+        ReactorOverloadManager overloads,
+        CreativeEventsManager creativeEvents,
+        TrapManager traps)
     {
         _groupManager = groupManager;
         _scopeFactory = scopeFactory;
+        _extractionManager = extractionManager;
+        _energyBonuses = energyBonuses;
+        _guardianSurges = guardianSurges;
+        _overloads = overloads;
+        _creativeEvents = creativeEvents;
+        _traps = traps;
     }
 
     public async Task HandleAsync(HttpContext context)
@@ -144,20 +170,58 @@ public sealed class WebSocketHandler
             case "subscribe_room":
                 await SubscribeToRoomAsync(connection, message);
                 break;
-
             case "move":
                 await RelayMovementAsync(connection, message);
                 break;
-            case "action":
-                await RelayActionAsync(connection);
+
+            case "extract_start":
+                await HandleExtractionStartAsync(connection, message);
                 break;
 
+            case "extract_stop":
+                await HandleExtractionStopAsync(connection, message);
+                break;
+            case "energy_bonus_collect":
+                await CollectEnergyBonusAsync(connection, message);
+                break;
+            case "configure_guardians":
+                await ConfigureGuardiansAsync(connection, message);
+                break;
             default:
                 await SendErrorAsync(
                     connection,
                     "Tipo de mensaje desconocido.");
                 break;
         }
+    }
+    private async Task ConfigureGuardiansAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (string.IsNullOrWhiteSpace(connection.RoomCode))
+        {
+            await SendErrorAsync(
+                connection,
+                "Debes pertenecer a una sala para configurar guardianes.");
+
+            return;
+        }
+
+        if (message.PosicionesGuardianes == null ||
+            message.PosicionesGuardianes.Count != 4)
+        {
+            await SendErrorAsync(
+                connection,
+                "Se necesitan exactamente cuatro posiciones.");
+
+            return;
+        }
+
+        // Pendiente: validar el escenario y la autorización.
+        // Todavía no creamos los guardianes.
+        await SendErrorAsync(
+            connection,
+            "La configuración de guardianes aún no está habilitada.");
     }
 
     private async Task SubscribeToRoomAsync(
@@ -234,7 +298,7 @@ public sealed class WebSocketHandler
 
         bool success = _groupManager.Subscribe(
             connection,
-            message.RoomCode,
+            codigoSala,
             out List<ClientConnection> existingConnections,
             out List<PlayerState> players,
             out string error);
@@ -252,6 +316,11 @@ public sealed class WebSocketHandler
             PlayerId = connection.PlayerId,
             PlayerName = connection.PlayerName,
         });
+
+        await SendRoomStateAsync(
+        connection,
+        partida.IdPartida,
+        partida.EnergiaRestante);
 
         // Informar al jugador nuevo quiénes ya estaban en la sala.
         foreach (var existing in existingConnections)
@@ -327,41 +396,6 @@ public sealed class WebSocketHandler
             return;
         }
 
-        using var scope = _scopeFactory.CreateScope();
-
-        var servicioPuntuacion = scope.ServiceProvider
-            .GetRequiredService<ServicioPuntuacion>();
-
-        int? nuevoPuntaje = await servicioPuntuacion.RegistrarMovimiento(
-            connection.IdJugadorPartida.Value);
-
-        if (!nuevoPuntaje.HasValue)
-        {
-            await SendErrorAsync(
-                connection,
-                "No se pudo registrar el movimiento.");
-            return;
-        }
-        // Mensaje con el puntaje actualizado.
-        var mensajePuntaje = new ServerMessage
-        {
-            Type = "score_updated",
-            RoomCode = connection.RoomCode,
-            PlayerId = connection.PlayerId,
-            IdUsuario = connection.IdUsuario,
-            IdJugadorPartida = connection.IdJugadorPartida.Value,
-            Puntaje = nuevoPuntaje.Value
-        };
-
-        // Enviar el puntaje al jugador que se movió.
-        await connection.SendAsync(mensajePuntaje);
-
-        // Enviar el puntaje a los demás jugadores de la sala.
-        foreach (var recipient in recipients)
-        {
-            await recipient.SendAsync(mensajePuntaje);
-        }
-
         var movementMessage = new ServerMessage
         {
             Type = "player_moved",
@@ -379,53 +413,12 @@ public sealed class WebSocketHandler
         }
     }
 
-    private async Task RelayActionAsync(ClientConnection connection)
-    {
-        // Verificar que el jugador pertenezca a una partida.
-        if (!connection.IdJugadorPartida.HasValue ||
-            string.IsNullOrEmpty(connection.RoomCode))
-        {
-            await SendErrorAsync(
-                connection,
-                "El jugador no pertenece a una partida válida.");
-            return;
-        }
-
-        // Obtener las conexiones de la sala.
-        List<ClientConnection> conexiones =
-            _groupManager.ObtenerConexionesSala(connection.RoomCode);
-
-        // Confirmar que el emisor sigue registrado en esa sala.
-        if (!conexiones.Any(c => ReferenceEquals(c, connection)))
-        {
-            await SendErrorAsync(
-                connection,
-                "La conexión no está registrada en la sala.");
-            return;
-        }
-
-        // Crear el evento que recibirá el otro jugador.
-        var mensajeAccion = new ServerMessage
-        {
-            Type = "player_action",
-            RoomCode = connection.RoomCode,
-            PlayerId = connection.PlayerId,
-            PlayerName = connection.PlayerName
-        };
-
-        // Enviar la acción solamente a los otros jugadores.
-        foreach (var destinatario in conexiones)
-        {
-            if (destinatario.PlayerId == connection.PlayerId)
-                continue;
-
-            await destinatario.SendAsync(mensajeAccion);
-        }
-    }
 
     private async Task RemoveConnectionAsync(
         ClientConnection connection)
     {
+        _extractionManager.StopAll(connection);
+
         bool removed = _groupManager.RemovePlayer(
             connection,
             out PlayerState? player,
@@ -449,12 +442,13 @@ public sealed class WebSocketHandler
             {
                 await recipient.SendAsync(leaveMessage);
             }
-            catch (WebSocketException)
+            catch (WebSocketException ex)
             {
-                // Una conexion restante tambien puede haberse cerrado.
+                Debug.WriteLine($"Error al notificar la desconexión del jugador: {ex.Message}");
             }
         }
     }
+
 
     private static Task SendErrorAsync(
         ClientConnection connection,
@@ -466,4 +460,468 @@ public sealed class WebSocketHandler
             Message = message
         });
     }
+
+    private async Task CollectEnergyBonusAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (!Guid.TryParseExact(message.BonusId, "N", out _))
+        {
+            await SendErrorAsync(connection, "Identificador de cápsula inválido.");
+            return;
+        }
+
+        if (connection.RoomCode is not string roomCode ||
+            connection.IdUsuario is not int userId ||
+            connection.IdJugadorPartida is not int playerMatchId ||
+            !_groupManager.ObtenerPosicionJugador(roomCode, connection.PlayerId,
+                out float x, out float y))
+        {
+            await SendErrorAsync(connection, "No se pudo validar la posición del jugador.");
+            return;
+        }
+
+        if (!_energyBonuses.TryReserve(roomCode, message.BonusId!, x, y,
+            out EnergyBonusState? bonus) || bonus == null)
+        {
+            await SendErrorAsync(connection, "La cápsula ya no está disponible o estás lejos.");
+            return;
+        }
+
+        bool awarded = false;
+
+        try
+        {
+            // Serializable evita perder puntos cuando coincide con extracción.
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider
+                    .GetRequiredService<ControlReactorDbContext>();
+
+                try
+                {
+                    await using var transaction = await db.Database
+                        .BeginTransactionAsync(IsolationLevel.Serializable);
+
+                    var match = await db.Partidas
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(p => p.IdPartida == bonus.MatchId);
+
+                    var player = await db.JugadoresPartida.FirstOrDefaultAsync(j =>
+                        j.IdJugadorPartida == playerMatchId &&
+                        j.IdUsuario == userId &&
+                        j.IdPartida == bonus.MatchId &&
+                        j.EnSala);
+
+                    if (match == null || match.Estado != "EN_CURSO" ||
+                        match.CodigoSala != roomCode || player == null)
+                    {
+                        await SendErrorAsync(connection,
+                            "La partida o el participante ya no están activos.");
+                        return;
+                    }
+
+                    player.Puntaje += EnergyBonusManager.BonusPoints;
+                    await db.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    awarded = true;
+                    _energyBonuses.Complete(bonus);
+
+                    var scoreUpdated = new ServerMessage
+                    {
+                        Type = "score_updated",
+                        RoomCode = roomCode,
+                        IdUsuario = player.IdUsuario,
+                        IdJugadorPartida = player.IdJugadorPartida,
+                        Puntaje = player.Puntaje
+                    };
+
+                    var collected = new ServerMessage
+                    {
+                        Type = "energy_bonus_collected",
+                        RoomCode = roomCode,
+                        BonusId = bonus.BonusId,
+                        IdUsuario = player.IdUsuario,
+                        Puntaje = player.Puntaje,
+                        Message = "Cápsula recogida: +10 puntos."
+                    };
+
+                    foreach (var recipient in _groupManager.ObtenerConexionesSala(roomCode))
+                    {
+                        try
+                        {
+                            await recipient.SendAsync(scoreUpdated);
+                            await recipient.SendAsync(collected);
+                        }
+                        catch (WebSocketException)
+                        {
+                            // Un cliente desconectado no impide actualizar a los demás.
+                        }
+                    }
+
+                    return;
+                }
+                catch (Exception ex) when (attempt < 2 &&
+                    (ex is PostgresException { SqlState: "40001" } ||
+                     ex.InnerException is PostgresException { SqlState: "40001" }))
+                {
+                    await Task.Delay(50 * (attempt + 1));
+                }
+            }
+
+            await SendErrorAsync(connection, "No se pudo registrar la cápsula. Intentá nuevamente.");
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Error al registrar la cápsula de energía: {ex.Message}");
+
+            if (!awarded)
+                await SendErrorAsync(connection, "No se pudo registrar la cápsula. Intentá nuevamente.");
+        }
+        finally
+        {
+            if (!awarded)
+                _energyBonuses.Release(bonus);
+        }
+    }
+
+
+    private async Task HandleExtractionStartAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (message.ReactorId != "central" ||
+            !Guid.TryParseExact(message.ExtractionId, "N", out _))
+        {
+            await SendErrorAsync(
+                connection, "Solicitud de extracción inválida.");
+            return;
+        }
+
+        if (connection.RoomCode is not string roomCode ||
+            connection.IdUsuario is not int userId ||
+            connection.IdJugadorPartida is not int playerMatchId)
+        {
+            await SendErrorAsync(
+                connection, "El jugador no está identificado.");
+            return;
+        }
+
+        var roomConnections = _groupManager.ObtenerConexionesSala(roomCode);
+
+        if (!roomConnections.Any(c => ReferenceEquals(c, connection)))
+        {
+            await SendErrorAsync(
+                connection, "El jugador no está conectado a la sala.");
+            return;
+        }
+
+        using var scope = _scopeFactory.CreateScope();
+
+        var db = scope.ServiceProvider
+            .GetRequiredService<ControlReactorDbContext>();
+
+        var match = await db.Partidas
+            .AsNoTracking()
+            .FirstOrDefaultAsync(p => p.CodigoSala == roomCode);
+
+        if (match == null || match.Estado != "EN_CURSO")
+        {
+            await SendErrorAsync(
+                connection, "La partida no está en curso.");
+            return;
+        }
+
+
+        if (match.EnergiaRestante <= 0 ||
+            match.ReactorRechargeReadyAtUtc != null)
+        {
+            await SendErrorAsync(
+                connection,
+                "El reactor está recargando. Intentá nuevamente en unos segundos.");
+            return;
+        }
+
+
+        bool isParticipant = await db.JugadoresPartida
+            .AsNoTracking()
+            .AnyAsync(j =>
+                j.IdJugadorPartida == playerMatchId &&
+                j.IdUsuario == userId &&
+                j.IdPartida == match.IdPartida &&
+                j.EnSala);
+
+        if (!isParticipant)
+        {
+            await SendErrorAsync(
+                connection, "El jugador no pertenece a la partida.");
+            return;
+        }
+
+        if (!ReactorConfiguration.TryGet(
+            match.IdEscenario, out ReactorData reactor))
+        {
+            await SendErrorAsync(
+                connection, "No existe un reactor configurado para este escenario.");
+            return;
+        }
+
+        if (!connection.HasReceivedPosition)
+        {
+            await SendErrorAsync(
+                connection, "Todavía no se conoce tu posición.");
+            return;
+        }
+
+        if (!float.IsFinite(connection.X) ||
+            !float.IsFinite(connection.Y))
+        {
+            await SendErrorAsync(
+                connection, "La posición del jugador no es válida.");
+            return;
+        }
+
+        float deltaX = connection.X - reactor.X;
+        float deltaY = connection.Y - reactor.Y;
+
+        float distanceSquared =
+            deltaX * deltaX +
+            deltaY * deltaY;
+
+        float radiusSquared = reactor.Radius * reactor.Radius;
+
+        if (distanceSquared > radiusSquared)
+        {
+            await SendErrorAsync(
+                connection, "Estás demasiado lejos del reactor.");
+            return;
+        }
+
+
+        // Impide iniciar una extracción durante una sobrecarga. Este candado
+        // también lo usa el worker que activa el evento.
+        ExtractionStartResult result;
+        bool overloaded;
+
+        using (await _overloads.EnterRoomGateAsync(roomCode, CancellationToken.None))
+        {
+            overloaded = _overloads.IsOverloaded(roomCode);
+            result = overloaded
+                ? ExtractionStartResult.Duplicate
+                : _extractionManager.TryStart(connection, message.ExtractionId!);
+        }
+
+        if (overloaded)
+        {
+            await SendErrorAsync(connection,
+                "El reactor está en sobrecarga. Esperá a que termine el evento.");
+            return;
+        }
+
+        if (result == ExtractionStartResult.Duplicate)
+        {
+            await SendErrorAsync(
+                connection, "Solicitud de extracción duplicada.");
+            return;
+        }
+
+        if (result == ExtractionStartResult.AlreadyActive)
+        {
+            await SendErrorAsync(
+                connection, "Ya existe una extracción activa.");
+            return;
+        }
+
+        await connection.SendAsync(new ServerMessage
+        {
+            Type = "extract_started",
+            Message = "Inicio de extracción registrado."
+        });
+    }
+
+
+    private async Task HandleExtractionStopAsync(
+        ClientConnection connection,
+        ClientMessage message)
+    {
+        if (connection.RoomCode == null ||
+            connection.IdJugadorPartida == null)
+        {
+            await SendErrorAsync(
+                connection, "El jugador no está identificado.");
+            return;
+        }
+
+        if (message.ReactorId != "central" ||
+            !Guid.TryParseExact(message.ExtractionId, "N", out _))
+        {
+            await SendErrorAsync(
+                connection, "Identificador de extracción inválido.");
+            return;
+        }
+
+
+        bool stopped = _extractionManager.TryStop(
+            connection,
+            message.ExtractionId!
+        );
+
+        if (!stopped)
+        {
+            await SendErrorAsync(
+                connection,
+                "No existe una extracción activa con ese identificador.");
+            return;
+        }
+
+        await connection.SendAsync(new ServerMessage
+        {
+            Type = "extract_stopped",
+            Message = "Extracción detenida."
+        });
+
+    }
+
+
+    private async Task SendRoomStateAsync(
+        ClientConnection connection,
+        int matchId,
+        int remainingEnergy)
+    {
+        await connection.SendAsync(new ServerMessage
+        {
+            Type = "reactor_state",
+            RoomCode = connection.RoomCode,
+            EnergiaRestante = remainingEnergy
+        });
+
+        using var scope = _scopeFactory.CreateScope();
+
+        var db = scope.ServiceProvider
+            .GetRequiredService<ControlReactorDbContext>();
+
+        var scores = await db.JugadoresPartida
+            .AsNoTracking()
+            .Where(p => p.IdPartida == matchId && p.EnSala)
+            .Select(p => new
+            {
+                p.IdJugadorPartida,
+                p.IdUsuario,
+                p.Puntaje
+            })
+            .ToListAsync();
+
+        foreach (var player in scores)
+        {
+            await connection.SendAsync(new ServerMessage
+            {
+                Type = "score_updated",
+                RoomCode = connection.RoomCode,
+                IdJugadorPartida = player.IdJugadorPartida,
+                IdUsuario = player.IdUsuario,
+                Puntaje = player.Puntaje
+            });
+        }
+
+        // Reconstruir la pastilla para un jugador que se conectó tarde.
+        if (connection.RoomCode is string roomCode)
+        {
+            var bonus = _energyBonuses.GetActiveForRoom(roomCode);
+            if (bonus != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (bonus.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = "energy_bonus_spawned",
+                        RoomCode = roomCode,
+                        BonusId = bonus.BonusId,
+                        X = bonus.X,
+                        Y = bonus.Y,
+                        BonusDuration = remaining,
+                        Message = "¡Hay una cápsula de energía adicional!"
+                    });
+                }
+            }
+
+            // Una conexión tardía debe ver el mismo evento que los demás.
+            var surge = _guardianSurges.GetActiveForRoom(roomCode);
+            if (surge != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (surge.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = "guardian_surge_started",
+                        RoomCode = roomCode,
+                        GuardianSurgeDuration = remaining,
+                        Message = "¡Hay 5 guardianes adicionales en la arena!"
+                    });
+                }
+            }
+
+            // Resynchronizar el reactor si el jugador se une durante el evento.
+            var overload = _overloads.GetActiveForRoom(roomCode);
+            if (overload != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (overload.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = "reactor_overload_started",
+                        RoomCode = roomCode,
+                        OverloadDuration = remaining,
+                        Message = "El reactor está en sobrecarga. No entrega puntos."
+                    });
+                }
+            }
+
+            // CA-22.4: quien entra tarde también ve las arenas o el x2 activo.
+            var creative = _creativeEvents.GetActiveForRoom(roomCode);
+            if (creative != null)
+            {
+                int remaining = Math.Max(0, (int)Math.Ceiling(
+                    (creative.ExpiresAtUtc - DateTime.UtcNow).TotalSeconds));
+
+                if (remaining > 0)
+                {
+                    await connection.SendAsync(new ServerMessage
+                    {
+                        Type = creative.Kind == CreativeEventKind.Sand
+                            ? "creative_sand_started" : "reactor_double_started",
+                        RoomCode = roomCode,
+                        CreativeDuration = remaining,
+                        SandZones = creative.Kind == CreativeEventKind.Sand
+                            ? creative.SandZones.ToList() : null,
+                        Message = "Evento creativo CA-22.4 activo."
+                    });
+                }
+            }
+
+            var trampas = _traps.GetForRoom(roomCode);
+
+            if (trampas != null)
+            {
+                await connection.SendAsync(new ServerMessage
+                {
+                    Type = "traps_spawned",
+                    RoomCode = roomCode,
+                    Traps = trampas.Traps.ToList(),
+                    Message = "Trampas sincronizadas."
+                });
+            }
+        }
+    }
+
 }

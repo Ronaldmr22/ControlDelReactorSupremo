@@ -15,6 +15,7 @@ public class ClienteSalas : MonoBehaviour
     {
         public int idUsuario;
         public string codigoSala;
+
     }
 
     [Serializable]
@@ -25,6 +26,7 @@ public class ClienteSalas : MonoBehaviour
         public int limiteTiempo;
         public int puntajeObjetivo;
         public int segundosCongelamiento;
+        public int idEscenario;
     }
 
 
@@ -87,6 +89,11 @@ public class ClienteSalas : MonoBehaviour
 
         if (solicitud.result != UnityWebRequest.Result.Success)
         {
+            Debug.LogError(
+                "[AbandonarPartida] HTTP: " + solicitud.responseCode +
+                " | URL: " + solicitud.url +
+                " | Respuesta: " + solicitud.downloadHandler.text
+            );
             string mensaje = "No se pudo completar la solicitud.";
 
             // Recupera el mensaje que devuelve la API.
@@ -157,6 +164,65 @@ public class ClienteSalas : MonoBehaviour
         Action<string> alError)
     {
         yield return EnviarAccionSala("/api/salas/salir", alCompletar, alError);
+    }
+
+    public IEnumerator AbandonarPartida(
+        string codigoSala,
+        Action alCompletar,
+        Action<string> alError)
+    {
+        if (SesionUsuario.IdUsuario <= 0 ||
+            string.IsNullOrWhiteSpace(codigoSala))
+        {
+            alError?.Invoke("No hay una partida activa.");
+            yield break;
+        }
+
+        var datos = new SolicitudSala
+        {
+            idUsuario = SesionUsuario.IdUsuario,
+            codigoSala = codigoSala.Trim().ToUpperInvariant()
+        };
+
+        string json = JsonUtility.ToJson(datos);
+
+        using var solicitud = new UnityWebRequest(
+            urlServidor.TrimEnd('/') + "/api/salas/abandonar-partida",
+            "POST");
+
+        solicitud.uploadHandler = new UploadHandlerRaw(
+            Encoding.UTF8.GetBytes(json));
+
+        solicitud.downloadHandler = new DownloadHandlerBuffer();
+        solicitud.SetRequestHeader("Content-Type", "application/json");
+        solicitud.timeout = 15;
+
+        yield return solicitud.SendWebRequest();
+
+        if (solicitud.result != UnityWebRequest.Result.Success)
+        {
+            string mensaje = "No se pudo abandonar la partida.";
+
+            try
+            {
+                var respuesta = JsonUtility.FromJson<RespuestaError>(
+                    solicitud.downloadHandler.text);
+
+                if (!string.IsNullOrWhiteSpace(respuesta?.mensaje))
+                    mensaje = respuesta.mensaje;
+            }
+            catch (Exception)
+            {
+                // Conservamos el mensaje general.
+            }
+
+            Debug.LogError("[AbandonarPartida] " + mensaje);
+            alError?.Invoke(mensaje);
+            yield break;
+        }
+
+        Debug.Log("[AbandonarPartida] Salida registrada correctamente.");
+        alCompletar?.Invoke();
     }
 
     public void LimpiarSala()
@@ -235,6 +301,7 @@ public class ClienteSalas : MonoBehaviour
         int minutos,
         int puntos,
         int segundosCongelamiento,
+        int idEscenario,
         Action alCompletar,
         Action<string> alError)
     {
@@ -271,7 +338,8 @@ public class ClienteSalas : MonoBehaviour
             tipoFinalizacion = modo,
             limiteTiempo = modo == "TIEMPO" ? minutos * 60 : 0,
             puntajeObjetivo = modo == "PUNTOS" ? puntos : 0,
-            segundosCongelamiento = segundosCongelamiento
+            segundosCongelamiento = segundosCongelamiento,
+            idEscenario = idEscenario
         };
 
         string json = JsonUtility.ToJson(datos);
@@ -291,6 +359,7 @@ public class ClienteSalas : MonoBehaviour
         solicitud.timeout = 20;
 
         yield return solicitud.SendWebRequest();
+        Debug.Log($"[GuardarMapa] {solicitud.method} {solicitud.url} | idEscenario={datos.idEscenario} | HTTP {solicitud.responseCode} | {solicitud.downloadHandler?.text}");
 
         if (solicitud.result != UnityWebRequest.Result.Success)
         {

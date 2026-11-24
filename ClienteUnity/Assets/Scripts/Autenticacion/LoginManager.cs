@@ -17,6 +17,8 @@ public class LoginManager : MonoBehaviour
     private TMP_Text mensajeLogin;
     [SerializeField]
     private string escenaJuego= "Lobby";
+    [SerializeField]
+    private GoogleLoginReceiver googleLoginReceiver;
 
     public void VerificarCorreo()
     {
@@ -48,6 +50,26 @@ public class LoginManager : MonoBehaviour
         StartCoroutine(EnviarLogin(correo, password));
         mensajeLogin.text = "Iniciando sesión...";
         mensajeLogin.color = Color.yellow;
+    }
+
+    public void IniciarSesionGoogle()
+    {
+        if (googleLoginReceiver == null)
+        {
+            Debug.LogError("No se asignó GoogleLoginReceiver.");
+            return;
+        }
+
+        googleLoginReceiver.PrepararSolicitud();
+        googleLoginReceiver.IniciarEscucha();
+
+        string urlBase = "https://control-reactor-api-a0e4atckgma2d0as.canadacentral-01.azurewebsites.net/api/usuarios/login-google";
+
+        string url = urlBase
+            + "?idSolicitud=" + UnityWebRequest.EscapeURL(googleLoginReceiver.IdSolicitud)
+            + "&desafio=" + UnityWebRequest.EscapeURL(googleLoginReceiver.Desafio);
+
+        Application.OpenURL(url);
     }
 
     [System.Serializable]

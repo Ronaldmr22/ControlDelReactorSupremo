@@ -7,8 +7,76 @@ using ControlReactor.Modelos.DTOs;
 using ControlReactor.Api.ServicioSegundoPlano;
 using ControlReactor.Modelos.Entidades;
 using ControlReactor.Api.Multijugador.Networking;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Google;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
+using ControlReactor.Api.Autenticacion;
+using ControlReactor.Negocio.Guardianes;
+using ControlReactor.Negocio.Guardianes.Colisiones;
+using ControlReactor.Api.Multijugador.Events;
+
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("UnityWebGL", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:8000",
+                "https://html-classic.itch.zone",
+                "https://html.itch.zone"
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
+// Autenticación con Google y usuarios tradicionales
+builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = "GoogleCookie";
+        options.DefaultChallengeScheme = "Google";
+    })
+    .AddCookie("GoogleCookie")
+    .AddCookie("UsuarioCookie", options =>
+    {
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.ExpireTimeSpan = TimeSpan.FromHours(2);
+    })
+    .AddGoogle("Google", options =>
+    {
+        options.Scope.Add("email");
+
+        options.SaveTokens = true;
+
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"]
+            ?? throw new InvalidOperationException("Falta el ClientId de Google.");
+
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"]
+            ?? throw new InvalidOperationException("Falta el ClientSecret de Google.");
+
+        options.CallbackPath = "/signin-google";
+        options.SignInScheme = "GoogleCookie";
+
+        options.Events.OnCreatingTicket = context =>
+        {
+            if (context.User.TryGetProperty("email_verified", out var verificado))
+            {
+                var valor = verificado.GetBoolean() ? "true" : "false";
+
+                context.Identity?.AddClaim(
+                    new Claim("email_verified", valor)
+                );
+            }
+
+            return Task.CompletedTask;
+        };
+    });
+
 
 // Servicios para registro y verificación de usuarios.
 builder.Services.AddHttpClient<ServicioValidacionCorreo>();
@@ -17,6 +85,8 @@ builder.Services.AddScoped<ServicioRegistroUsuario>();
 builder.Services.AddScoped<ServicioCodigoVerificacion>();
 builder.Services.AddScoped<ServicioVerificacionCorreo>();
 builder.Services.AddScoped<ServicioLoginUsuario>();
+builder.Services.AddScoped<ServicioLoginGoogle>();
+builder.Services.AddSingleton<ServicioCodigoLoginGoogle>();
 builder.Services.AddScoped<ServicioRecuperacionPassword>();
 
 builder.Services.AddScoped<ServicioAvatarUsuario>();
@@ -26,6 +96,12 @@ builder.Services.AddScoped<ServicioLogros>();
 
 // Revisa automáticamente las partidas activas
 builder.Services.AddHostedService<MonitorPartidas>();
+builder.Services.AddHostedService<ExtractionProcessor>();
+builder.Services.AddHostedService<EnergyBonusWorker>();
+builder.Services.AddHostedService<ReactorOverloadWorker>();
+builder.Services.AddHostedService<CreativeEventsWorker>();
+
+builder.Services.AddHostedService<MonitorPuertasArena>();
 
 // Servicio de puntuación.
 builder.Services.AddScoped<ServicioPuntuacion>();
@@ -50,11 +126,111 @@ builder.Services.AddDbContext<ControlReactorDbContext>(options =>options.UseNpgs
 builder.Services.AddOpenApi();
 
 builder.Services.AddSingleton<ConnectionGroupManager>();
+builder.Services.AddSingleton<ExtractionSessionManager>();
+builder.Services.AddSingleton<ReactorOverloadManager>();
+builder.Services.AddSingleton<CreativeEventsManager>(sp =>
+
+{    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    return new CreativeEventsManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+});
+builder.Services.AddHostedService<TrapsWorker>();
+builder.Services.AddSingleton<TrapManager>(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+
+    string rutaMapas = Path.Combine(
+        environment.ContentRootPath,
+        "Mapas"
+    );
+
+    return new TrapManager(rutaMapas);
+});
+builder.Services.AddSingleton<EnergyBonusManager>(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    return new EnergyBonusManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+});
+builder.Services.AddSingleton<GuardianSurgeManager>(sp =>
+{
+    var environment = sp.GetRequiredService<IWebHostEnvironment>();
+    return new GuardianSurgeManager(Path.Combine(environment.ContentRootPath, "Mapas"));
+});
 builder.Services.AddSingleton<WebSocketHandler>();
+
+// Servicios de administración de guardianes por sala
+builder.Services.AddSingleton<AdministradorGuardianesPorSala>(sp =>
+{
+    var entorno = sp.GetRequiredService<IWebHostEnvironment>();
+
+    string rutaMapas = Path.Combine(
+        entorno.ContentRootPath,
+        "Mapas"
+    );
+
+    return new AdministradorGuardianesPorSala(rutaMapas);
+});
+
+builder.Services.AddHostedService<MonitorGuardianes>();
+
+// Registrar servicios de autorización
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+
+// PRUEBA TEMPORAL: cargar las colisiones del mapa 1.
+try
+{
+    string rutaColisiones = Path.Combine(
+        app.Environment.ContentRootPath,
+        "Mapas",
+        "ColisionesMapa1.json"
+    );
+
+    DatosColisionesMapa mapa =
+        CargadorColisionesMapa.Cargar(rutaColisiones);
+
+    
+    bool pruebaPared = DetectorColisionesMapa.PuntoEnObstaculo(
+        -13.7f,
+        -0.8f,
+        mapa
+    );
+
+    bool pruebaLibre = DetectorColisionesMapa.PuntoEnObstaculo(
+        -13.7f,
+        -5.0f,
+        mapa
+    );
+
+    Console.WriteLine(
+        $"Prueba dentro de pared: {pruebaPared}"
+    );
+
+    Console.WriteLine(
+        $"Prueba en zona libre: {pruebaLibre}"
+    );
+
+
+    Console.WriteLine(
+        $"Mapa {mapa.IdEscenario}: se cargaron " +
+        $"{mapa.Obstaculos.Count} polígonos de colisión."
+    );
+}
+catch (Exception ex)
+{
+    Console.WriteLine(
+        $"ERROR al cargar las colisiones: {ex.Message}"
+    );
+}
+
+
 app.UseWebSockets();
+
+app.UseCors("UnityWebGL");
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // OpenAPI disponible durante desarrollo
 if (app.Environment.IsDevelopment())
@@ -62,12 +238,332 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-// Endpoint temporal para comprobar que el servidor funciona
-app.MapGet("/api/prueba", () =>
-{
-    return "Servidor de Control del Reactor funcionando";
-});
+ // Iniciar autenticación con Google desde Unity
+app.MapGet("/api/usuarios/login-google", (
+        string idSolicitud,
+        string desafio) =>
+    {
+        // Validar el identificador de la solicitud
+        if (!Guid.TryParseExact(idSolicitud, "N", out _))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "Identificador de solicitud inválido."
+            });
+        }
 
+        // Validar el desafío PKCE (SHA-256 en Base64URL)
+        if (desafio.Length != 43 ||
+            desafio.Any(c =>
+                !char.IsLetterOrDigit(c) && c != '-' && c != '_'))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "Desafío de autenticación inválido."
+            });
+        }
+
+        var propiedades = new AuthenticationProperties
+        {
+            RedirectUri = "/api/usuarios/google-resultado"
+        };
+
+        // Conservar los datos durante la autenticación con Google
+        propiedades.Items["idSolicitud"] = idSolicitud;
+        propiedades.Items["desafio"] = desafio;
+
+        return Results.Challenge(
+            propiedades,
+            authenticationSchemes: new[]
+            {
+                GoogleDefaults.AuthenticationScheme
+            }
+        );
+    });
+
+
+app.MapGet("/api/usuarios/vincular-google", (
+    HttpContext contexto) =>
+    {
+        var propiedades = new AuthenticationProperties
+        {
+            RedirectUri = "/api/usuarios/google-vincular-resultado"
+        };
+
+        return Results.Challenge(
+            propiedades,
+            authenticationSchemes: new[] { "Google" }
+        );
+    })
+    .RequireAuthorization(new AuthorizeAttribute
+    {
+        AuthenticationSchemes = "UsuarioCookie"
+    });
+
+app.MapGet("/api/usuarios/google-vincular-resultado",
+    async (
+        HttpContext contexto,
+        IUsuarioRepositorio repositorio) =>
+    {
+        // Comprobar que el usuario inició sesión con contraseña
+        var sesion = await contexto.AuthenticateAsync("UsuarioCookie");
+
+        if (!sesion.Succeeded || sesion.Principal == null)
+            return Results.Unauthorized();
+
+        var idTexto = sesion.Principal
+            .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!int.TryParse(idTexto, out var idUsuario))
+            return Results.Unauthorized();
+
+        // Recuperar la identidad verificada por Google
+        var google = await contexto.AuthenticateAsync("GoogleCookie");
+
+        if (!google.Succeeded || google.Principal == null)
+            return Results.Unauthorized();
+
+        var idGoogle = google.Principal
+            .FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        var correoGoogle = google.Principal
+            .FindFirst(ClaimTypes.Email)?.Value;
+
+        var correoVerificado = google.Principal
+            .FindFirst("email_verified")?.Value;
+
+        await contexto.SignOutAsync("GoogleCookie");
+
+        if (string.IsNullOrWhiteSpace(idGoogle) ||
+            string.IsNullOrWhiteSpace(correoGoogle) ||
+            correoVerificado != "true")
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "No se pudo verificar la cuenta de Google."
+            });
+        }
+
+        // Comprobar que ambos correos coincidan
+        var usuario = await repositorio.ObtenerPorIdAsync(idUsuario);
+
+        if (usuario == null ||
+            !string.Equals(
+                usuario.Correo.Trim(),
+                correoGoogle.Trim(),
+                StringComparison.OrdinalIgnoreCase))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "El correo de Google no coincide con el de tu cuenta."
+            });
+        }
+
+        // Evitar vinculaciones duplicadas
+        var usuarioGoogle = await repositorio.ObtenerPorGoogleAsync(idGoogle);
+
+        if (usuarioGoogle != null ||
+            await repositorio.TieneGoogleVinculadoAsync(idUsuario))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "La cuenta de Google ya está vinculada."
+            });
+        }
+
+        await repositorio.VincularGoogleAsync(idUsuario, idGoogle);
+
+        return Results.Ok(new
+        {
+            mensaje = "Cuenta de Google vinculada correctamente.",
+            idUsuario = usuario.IdUsuario,
+            nombreUsuario = usuario.NombreUsuario
+        });
+    });
+
+app.MapGet("/api/usuarios/google-resultado",
+    async (HttpContext contexto, ServicioLoginGoogle servicio, ServicioCodigoLoginGoogle servicioCodigos) =>
+    {
+        // Recuperar la identidad autenticada
+        var resultado = await contexto.AuthenticateAsync("GoogleCookie");
+
+        if (!resultado.Succeeded || resultado.Principal == null)
+        {
+            return Results.Unauthorized();
+        }
+        var identidad = resultado.Principal;
+
+        // Recuperar los datos de la solicitud iniciada desde Unity
+        string? idSolicitud = null;
+        string? desafio = null;
+
+        if (resultado.Properties != null)
+        {
+            resultado.Properties.Items.TryGetValue("idSolicitud", out idSolicitud);
+            resultado.Properties.Items.TryGetValue("desafio", out desafio);
+        }
+
+        if (string.IsNullOrWhiteSpace(idSolicitud) ||
+            string.IsNullOrWhiteSpace(desafio))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "No se encontraron los datos de autenticación de Unity."
+            });
+        }
+
+        // Obtener los datos proporcionados por Google
+        var idGoogle = identidad.FindFirst(
+            System.Security.Claims.ClaimTypes.NameIdentifier
+        )?.Value;
+
+        var correo = identidad.FindFirst(
+            System.Security.Claims.ClaimTypes.Email
+        )?.Value;
+
+        var nombre = identidad.FindFirst(
+            System.Security.Claims.ClaimTypes.Name
+        )?.Value ?? "";
+
+        // Google debe confirmar que el correo está verificado
+        var correoVerificado = identidad.FindFirst("email_verified")?.Value;
+        Console.WriteLine(
+            $"Google OAuth - Correo verificado: {correoVerificado ?? "NO RECIBIDO"}"
+        );
+
+        await contexto.SignOutAsync("GoogleCookie");
+
+        // No registrar usuarios si falta la confirmación del correo
+        if (correoVerificado != "true")
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "No se pudo confirmar que Google verificó el correo."
+            });
+        }
+
+        // Buscar o registrar al usuario en PostgreSQL
+        var login = await servicio.LoginAsync(
+            idGoogle ?? "",
+            correo ?? "",
+            nombre,
+            true
+        );
+
+        if (!login.Exito)
+        {
+            if (login.Mensaje == "Este correo ya está registrado. Inicia sesión con tu cuenta existente.")
+            {
+                var ruta = Path.Combine(
+                    app.Environment.ContentRootPath,
+                    "Paginas",
+                    "google-error.html"
+                );
+
+                var html = await File.ReadAllTextAsync(ruta);
+
+                return Results.Content(
+                    html,
+                    "text/html; charset=utf-8",
+                    statusCode: 400
+                );
+            }
+
+            return Results.BadRequest(new
+            {
+                mensaje = login.Mensaje
+            });
+        }
+
+        // Generar código temporal para Unity
+        string codigo = servicioCodigos.GenerarCodigo(
+            login.Usuario!.IdUsuario,
+            idSolicitud,
+            desafio
+        );
+
+        // Redirigir el navegador hacia Unity
+        return Results.Content(
+            """
+            <!DOCTYPE html>
+            <html lang="es">
+            <head>
+                <meta charset="UTF-8">
+                <title>Inicio de sesión exitoso</title>
+            </head>
+            <body style="font-family: Arial; text-align: center; padding-top: 80px;">
+                <h2>Inicio de sesión exitoso</h2>
+                <p>Ya puedes regresar a Control del Reactor.</p>
+                <p>Puedes cerrar esta pestaña.</p>
+            </body>
+            </html>
+            """,
+            "text/html; charset=utf-8"
+        );
+    });
+
+// Unity consulta si Google terminó de autenticar al usuario
+app.MapPost("/api/usuarios/google-consultar",
+    (ConsultaGoogle solicitud, ServicioCodigoLoginGoogle servicioCodigos) =>
+    {
+        if (string.IsNullOrWhiteSpace(solicitud.IdSolicitud) ||
+            string.IsNullOrWhiteSpace(solicitud.Verificador))
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "Faltan datos de autenticación."
+            });
+        }
+
+        string? codigo = servicioCodigos.ConsultarCodigoSeguro(
+            solicitud.IdSolicitud,
+            solicitud.Verificador);
+
+        if (codigo == null)
+        {
+            return Results.Ok(new
+            {
+                completado = false,
+                codigo = (string?)null
+            });
+        }
+
+        return Results.Ok(new
+        {
+            completado = true,
+            codigo
+        });
+    });
+
+app.MapPost("/api/usuarios/google-canjear", async (
+            CanjearCodigoGoogleDto dto,
+            ServicioCodigoLoginGoogle servicioCodigos,
+            IUsuarioRepositorio repositorio) =>
+        {
+            int? idUsuario = servicioCodigos.ConsumirCodigo(
+                dto.Codigo,
+                dto.IdSolicitud,
+                dto.Verificador
+            );
+
+            if (idUsuario == null)
+            {
+                return Results.Unauthorized();
+            }
+
+            var usuario = await repositorio.ObtenerPorIdAsync(idUsuario.Value);
+
+            if (usuario == null)
+            {
+                return Results.Unauthorized();
+            }
+
+            return Results.Ok(new
+            {
+                idUsuario = usuario.IdUsuario,
+                nombreUsuario = usuario.NombreUsuario
+            });
+        });
 
 app.MapPost("/api/usuarios/registro", async (RegistroUsuarioDto dto,ServicioRegistroUsuario servicio) =>
 {
@@ -113,23 +609,41 @@ app.MapPost("/api/usuarios/reenviar-codigo", async (ReenviarCodigoDto datos, Ser
         ? Results.Ok(new { mensaje = resultado.Mensaje })
         : Results.BadRequest(new { mensaje = resultado.Mensaje });
 });
- // Inicio de sesión de usuarios.
+// Inicio de sesión de usuarios.
 app.MapPost("/api/usuarios/login", async (
     LoginUsuarioDto dto,
-    ServicioLoginUsuario servicio) =>
+    ServicioLoginUsuario servicio,
+    HttpContext contexto) =>
 {
     var resultado = await servicio.LoginAsync(dto);
 
     if (!resultado.Exito)
     {
-        return Results.Json(new { mensaje = resultado.Mensaje }, statusCode: 401);
+        return Results.Json(
+            new { mensaje = resultado.Mensaje },
+            statusCode: 401
+        );
     }
+
+    var usuario = resultado.Usuario!;
+
+    // Crear una identidad autenticada para el usuario.
+    var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
+        new Claim(ClaimTypes.Name, usuario.NombreUsuario)
+    };
+
+    var identidad = new ClaimsIdentity(claims, "UsuarioCookie");
+    var principal = new ClaimsPrincipal(identidad);
+
+    await contexto.SignInAsync("UsuarioCookie", principal);
 
     return Results.Ok(new
     {
         mensaje = resultado.Mensaje,
-        idUsuario = resultado.Usuario!.IdUsuario,
-        nombreUsuario = resultado.Usuario.NombreUsuario
+        idUsuario = usuario.IdUsuario,
+        nombreUsuario = usuario.NombreUsuario
     });
 });
 
@@ -155,28 +669,6 @@ app.MapGet("/api/puntuacion/{idJugadorPartida:int}", async (
         idUsuario = jugador.IdUsuario,
         idPartida = jugador.IdPartida,
         puntaje = jugador.Puntaje
-    });
-});
-
-// Registra un movimiento y suma un punto al participante.
-app.MapPost("/api/puntuacion/movimiento/{idJugadorPartida:int}", async (
-    int idJugadorPartida,
-    ServicioPuntuacion servicio) =>
-{
-    var puntaje = await servicio.RegistrarMovimiento(idJugadorPartida);
-
-    if (puntaje == null)
-    {
-        return Results.BadRequest(new
-        {
-            mensaje = "El participante no existe o la partida no está activa."
-        });
-    }
-
-    return Results.Ok(new
-    {
-        mensaje = "Movimiento registrado correctamente.",
-        puntaje = puntaje.Value
     });
 });
 
@@ -838,6 +1330,26 @@ app.MapPost("/api/salas/salir", async (
     return Results.Ok(new { mensaje = resultado.Mensaje });
 });
 
+ // Permite abandonar una partida que ya comenzó.
+app.MapPost("/api/salas/abandonar-partida", async (
+    UnirseSalaDto datos,
+    ISalaRepositorio repositorio) =>
+{
+    var resultado = await repositorio.AbandonarPartidaAsync(
+        datos.IdUsuario,
+        datos.CodigoSala);
+
+    if (!resultado.Exito)
+        return Results.BadRequest(new
+        {
+            mensaje = resultado.Mensaje
+        });
+
+    return Results.Ok(new
+    {
+        mensaje = resultado.Mensaje
+    });
+});
 
 // Guarda la configuración de una partida desde el lobby.
 app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
@@ -879,6 +1391,24 @@ app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
         {
             mensaje = "No se puede modificar la configuración porque la partida ya comenzó."
         });
+    }
+
+    if (datos.IdEscenario is int idEscenario)
+    {
+        if (partida.IdUsuarioCreador != datos.IdUsuario)
+        {
+            return Results.Json(new
+            {
+                mensaje = "Solo el anfitrión puede elegir el escenario."
+            }, statusCode: 403);
+        }
+        if (idEscenario != 1 && idEscenario != 2 && idEscenario != 3)
+        {
+            return Results.BadRequest(new
+            {
+                mensaje = "El escenario seleccionado todavía no está disponible."
+            });
+        }
     }
 
     string modo = datos.TipoFinalizacion.Trim().ToUpperInvariant();
@@ -930,12 +1460,14 @@ app.MapPut("/api/partidas/{idPartida:int}/configuracion", async (
     partida.SegundosCongelamiento = datos.SegundosCongelamiento;
 
     // Guardar los cambios en PostgreSQL.
+    partida.IdEscenario = datos.IdEscenario ?? partida.IdEscenario;
     await db.SaveChangesAsync();
 
     return Results.Ok(new
     {
         mensaje = "Configuración guardada correctamente.",
         idPartida = partida.IdPartida,
+        idEscenario = partida.IdEscenario,
         tipoFinalizacion = partida.TipoFinalizacion,
         limiteTiempo = partida.LimiteTiempo,
         puntajeObjetivo = partida.PuntajeObjetivo,
@@ -974,6 +1506,7 @@ app.Map("/ws", async context =>
 });
 
 
+
  // Obtiene el resultado definitivo para la pantalla de victoria.
 app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
     int idPartida,
@@ -989,7 +1522,7 @@ app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
     if (partida.Estado != "FINALIZADA")
         return Results.Conflict(new { mensaje = "La partida no ha finalizado." });
 
-    var jugadores = await jugadorRepositorio.ObtenerPorPartidaAsync(idPartida);
+    var jugadores = (await jugadorRepositorio.ObtenerPorPartidaAsync(idPartida)).OrderByDescending(j => j.Puntaje).ToList();
     var ganador = jugadores.FirstOrDefault(j => j.EsGanador);
 
     if (ganador == null)
@@ -1000,19 +1533,55 @@ app.MapGet("/api/partidas/{idPartida:int}/resultado", async (
     if (usuario == null)
         return Results.NotFound(new { mensaje = "No se encontró al usuario ganador." });
 
+    // Crear la clasificación completa de la partida.
+    var clasificacion = new List<object>();
+
+    for (int i = 0; i < jugadores.Count; i++)
+    {
+        var jugador = jugadores[i];
+
+        var usuarioJugador = await usuarioRepositorio
+            .ObtenerPorIdAsync(jugador.IdUsuario);
+
+        clasificacion.Add(new
+        {
+            posicion = i + 1,
+            idUsuario = jugador.IdUsuario,
+            nombreUsuario = usuarioJugador?.NombreUsuario ?? "Desconocido",
+            avatarSeleccionado = usuarioJugador?.AvatarSeleccionado ?? 0,
+            puntaje = jugador.Puntaje,
+            esGanador = jugador.EsGanador
+        });
+    }
+
     return Results.Ok(new
     {
         idPartida = partida.IdPartida,
         estado = partida.Estado,
+        duracionSegundos = partida.FechaFin.HasValue
+            ? (int)(partida.FechaFin.Value - partida.FechaInicio).TotalSeconds
+            : 0,
+
+
+        // Mantener los datos originales del ganador.
         ganador = new
         {
             idUsuario = usuario.IdUsuario,
             nombreUsuario = usuario.NombreUsuario,
             avatarSeleccionado = usuario.AvatarSeleccionado ?? 0,
             puntaje = ganador.Puntaje
-        }
+        },
+
+        // Agregar las posiciones de todos los participantes.
+        clasificacion
     });
+    
 });
 
-
 app.Run();
+
+public class ConsultaGoogle
+{
+    public string IdSolicitud { get; set; } = "";
+    public string Verificador { get; set; } = "";
+}

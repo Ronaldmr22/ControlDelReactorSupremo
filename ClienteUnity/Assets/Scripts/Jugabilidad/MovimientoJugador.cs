@@ -6,24 +6,39 @@ using UnityEngine.InputSystem;
 public class MovimientoJugador : MonoBehaviour
 {
     [SerializeField] private float velocidad = 3f;
+    [Header("Eventos especiales")]
+    [SerializeField, Range(0.1f, 1f)] private float factorArenaMovediza = 0.6f;
+    private bool sobreArenaMovediza;
+
+    [Header("Trampas")]
+    private bool controlesInvertidos;
+
+    [SerializeField, Range(0.1f, 1f)]
+    private float factorTrampaCongelada = 0.6f;
+
+    private bool sobreTrampaCongelada;
+    private bool atrapadoCeldaElectrica;
 
     [SerializeField] private Sprite abajo;
     [SerializeField] private Sprite arriba;
     [SerializeField] private Sprite izquierda;
     [SerializeField] private Sprite derecha;
-
     private Rigidbody2D cuerpo;
     private SpriteRenderer imagen;
     private Vector2 movimiento;
+    private bool estaCongelado;
+    [Header("Efectos visuales")]
+    [SerializeField] private GameObject efectoEstrellas;
     private MensajeSobreAvatar mensaje;
 
     public event Action AccionEjecutada;
+    public event Action AccionFinalizada;
+    private bool accionMantenida;
 
     private void Awake()
     {
         cuerpo = GetComponent<Rigidbody2D>();
         imagen = GetComponent<SpriteRenderer>();
-        mensaje = GetComponent<MensajeSobreAvatar>();
     }
 
     public void ConfigurarSprites(
@@ -45,34 +60,46 @@ public class MovimientoJugador : MonoBehaviour
 
     private void Update()
     {
+        if (estaCongelado || atrapadoCeldaElectrica)
+        {
+            movimiento = Vector2.zero;
+            return;
+        }
         Gamepad control = Gamepad.current;
 
-        // Movimiento con la cruceta.
         movimiento = control != null
             ? control.dpad.ReadValue()
             : Vector2.zero;
 
+        // Trampa de controles invertidos.
+        if (controlesInvertidos)
+        {
+            movimiento = -movimiento;
+        }
+
         movimiento = Vector2.ClampMagnitude(movimiento, 1f);
 
-        // Acción con el botón X del control.
-        if (control != null && control.buttonSouth.wasPressedThisFrame)
+        movimiento = Vector2.ClampMagnitude(movimiento, 1f);
+
+        bool presionada = control != null &&
+                            control.buttonSouth.isPressed;
+
+        if (presionada && !accionMantenida)
         {
-            Debug.Log("Acción ejecutada");
-
-            if (mensaje != null)
-                mensaje.Mostrar("Acción");
-            else
-                Debug.LogWarning("Falta MensajeSobreAvatar en el personaje.");
-
-            // Notificar al sistema multijugador.
+            accionMantenida = true;
             AccionEjecutada?.Invoke();
         }
+        else if (!presionada && accionMantenida)
+        {
+            accionMantenida = false;
+            AccionFinalizada?.Invoke();
+        }
+
 
         ActualizarDireccionVisual(movimiento);
     }
     public void ActualizarDireccionVisual(Vector2 direccion)
     {
-        // Al detenerse conserva la última orientación.
         if (direccion.sqrMagnitude < 0.000001f)
             return;
 
@@ -91,15 +118,84 @@ public class MovimientoJugador : MonoBehaviour
     }
     private void FixedUpdate()
     {
-        cuerpo.linearVelocity = movimiento * velocidad;
-    }
+        if (estaCongelado || atrapadoCeldaElectrica)
+        {
+            cuerpo.linearVelocity = Vector2.zero;
+            return;
+        }
 
+        float factorVelocidad = 1f;
+
+        if (sobreArenaMovediza)
+        {
+            factorVelocidad = factorArenaMovediza;
+        }
+
+        if (sobreTrampaCongelada)
+        {
+            factorVelocidad = Mathf.Min(
+                factorVelocidad,
+                factorTrampaCongelada);
+        }
+
+        cuerpo.linearVelocity =
+            movimiento * velocidad * factorVelocidad;
+    }
     private void OnDisable()
     {
+
+        if (accionMantenida)
+        {
+            accionMantenida = false;
+            AccionFinalizada?.Invoke();
+        }
+
         movimiento = Vector2.zero;
 
         if (cuerpo != null)
             cuerpo.linearVelocity = Vector2.zero;
+    }
+    public void EstablecerCongelado(bool congelado)
+    {
+        estaCongelado = congelado;
+
+        EstablecerEfectoEstrellas(congelado);
+
+        if (congelado)
+        {
+            movimiento = Vector2.zero;
+            cuerpo.linearVelocity = Vector2.zero;
+        }
+    }
+
+    public void EstablecerArenaMovediza(bool activa)
+    {
+        sobreArenaMovediza = activa;
+    }
+    public void EstablecerControlesInvertidos(bool invertidos)
+    {
+        controlesInvertidos = invertidos;
+    }
+        public void EstablecerTrampaCongelada(bool activa)
+    {
+        sobreTrampaCongelada = activa;
+    }
+    public void EstablecerCeldaElectrica(bool activa)
+    {
+        atrapadoCeldaElectrica = activa;
+
+        if (activa)
+        {
+            movimiento = Vector2.zero;
+            cuerpo.linearVelocity = Vector2.zero;
+        }
+    }
+    public void EstablecerEfectoEstrellas(bool activo)
+    {
+        if (efectoEstrellas != null)
+        {
+            efectoEstrellas.SetActive(activo);
+        }
     }
 }
 

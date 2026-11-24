@@ -60,13 +60,19 @@ public class MarcadorPartidaUI : MonoBehaviour
     {
         var mensaje = JsonUtility.FromJson<MensajePuntaje>(json);
 
-        if (mensaje.type != "score_updated")
+        if (mensaje == null ||
+            (mensaje.type != "score_updated" &&
+            mensaje.type != "extraction_updated"))
+        {
             return;
+        }
 
         if (!puntajes.ContainsKey(mensaje.idUsuario))
             return;
 
+        // Actualizar con el puntaje real enviado por el servidor
         puntajes[mensaje.idUsuario] = mensaje.puntaje;
+
         ActualizarMarcador();
     }
 

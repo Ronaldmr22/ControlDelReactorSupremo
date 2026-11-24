@@ -5,6 +5,7 @@ namespace ControlReactor.Modelos.DTOs
     public class SalaDto
     {
         public int IdPartida { get; set; }
+        public int IdEscenario { get; set; }
         public string CodigoSala { get; set; } = string.Empty;
         public string Estado { get; set; } = string.Empty;
         public int IdUsuarioCreador { get; set; }

@@ -180,6 +180,7 @@ namespace ControlReactor.Datos.Repositorios
             return new SalaDto
             {
                 IdPartida = partida.IdPartida,
+                IdEscenario = partida.IdEscenario,
                 CodigoSala = partida.CodigoSala!,
                 Estado = partida.Estado,
                 IdUsuarioCreador = partida.IdUsuarioCreador ?? 0,
@@ -265,6 +266,39 @@ namespace ControlReactor.Datos.Repositorios
             return (true, "Saliste de la sala.");
         }
 
+        public async Task<(bool Exito, string Mensaje)> AbandonarPartidaAsync(
+            int idUsuario, string codigoSala)
+        {
+            await using var transaccion =
+                await _context.Database.BeginTransactionAsync();
+
+            var partida = await BuscarSalaBloqueadaAsync(codigoSala);
+
+            if (partida == null)
+                return (false, "La partida no existe.");
+
+            if (partida.Estado != "EN_CURSO")
+                return (false, "La partida no está en curso.");
+
+            var jugador = await _context.JugadoresPartida
+                .FirstOrDefaultAsync(j =>
+                    j.IdPartida == partida.IdPartida &&
+                    j.IdUsuario == idUsuario);
+
+            if (jugador == null || !jugador.EnSala)
+                return (false, "El jugador no está activo en la partida.");
+
+            // Marcar que el jugador abandonó la partida.
+            jugador.EnSala = false;
+            jugador.UltimaActividadUtc = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            await transaccion.CommitAsync();
+
+            return (true, "Abandonaste la partida correctamente.");
+        }
+
+
         public async Task<(bool Exito, string Mensaje)> IniciarPartidaAsync(
         int idUsuario, string codigoSala)
         {
@@ -294,8 +328,8 @@ namespace ControlReactor.Datos.Repositorios
                     j.UltimaActividadUtc.HasValue &&
                     j.UltimaActividadUtc.Value >= limite);
 
-            if (participantesActivos < 2)
-                return (false, "Se necesitan al menos 2 jugadores para iniciar.");
+            if (participantesActivos < 1)
+                return (false, "Se necesitan al menos 1 jugador para iniciar.");
 
             // Verificamos que el creador siga activo.
             var creadorActivo = await _context.JugadoresPartida

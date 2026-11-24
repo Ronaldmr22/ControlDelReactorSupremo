@@ -5,6 +5,8 @@ namespace ControlReactor.Modelos.Entidades
         public int IdPartida { get; set; }
         
         public string? CodigoSala { get; set; }
+        
+        public int IdEscenario { get; set; } = 1;
 
         public int? IdUsuarioCreador { get; set; }
 
@@ -21,5 +23,9 @@ namespace ControlReactor.Modelos.Entidades
         public string Estado { get; set; } = "ESPERANDO";
 
         public int SegundosCongelamiento { get; set; }
+
+        public int EnergiaRestante { get; set; } = 100;
+
+        public DateTime? ReactorRechargeReadyAtUtc { get; set; }
     }
 }
