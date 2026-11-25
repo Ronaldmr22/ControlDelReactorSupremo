@@ -4,7 +4,6 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
 
 public class CodigoManager : MonoBehaviour
 {
@@ -12,8 +11,11 @@ public class CodigoManager : MonoBehaviour
     private TMP_InputField inputCodigo;
     [SerializeField] 
     private TMP_Text mensajeError;
-    [SerializeField] 
-    private string escenaJuego = "Lobby";
+    [SerializeField]
+    private GameObject panelInicioSesion;
+
+    [SerializeField]
+    private GameObject panelVerificacion;
     [SerializeField] 
     private ReenviarCodigo reenviarCodigo;
 
@@ -108,7 +110,10 @@ public class CodigoManager : MonoBehaviour
 
             yield return new WaitForSeconds(1f);
 
-            SceneManager.LoadScene(escenaJuego);
+            verificando = false;
+
+            panelInicioSesion.SetActive(true);
+            panelVerificacion.SetActive(false);
         }
 
         verificando = false;
